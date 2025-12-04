@@ -1,0 +1,10 @@
+# Infrastructure values for prd cluster
+# Override helm values here
+
+ingress-nginx:
+  controller:
+    replicaCount: 2
+
+longhorn:
+  persistence:
+    defaultClassReplicaCount: 2

@@ -1,0 +1,48 @@
+# Если admissionWebhooks: enabled: false, то деплой ингресса виснет на хрен поймешь каком этапе намертово
+# Проблема с запуском ingress-nginx была в циклической блокировке webhook. (но это не точно)
+# Проконсультироваться, ибо не production-ready
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress-nginx
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"  # Устанавливается первым
+spec:
+  project: default
+  destination:
+    name: CLUSTER  # ← Placeholder, заменится через overlay
+    namespace: ingress-nginx
+  source:
+    repoURL: https://kubernetes.github.io/ingress-nginx
+    chart: ingress-nginx
+    targetRevision: 4.12.3
+    helm:
+      values: |
+        controller:
+          kind: DaemonSet
+          ingressClassResource:
+            name: nginx
+            enabled: true
+            default: true
+          metrics:
+            enabled: true
+          admissionWebhooks:
+            enabled: false
+  # syncPolicy:
+  #   automated:
+  #     selfHeal: true
+  #     prune: true
+  #   syncOptions:
+  #     - CreateNamespace=true
+  #     - Replace=true  # Для пересоздания проблемных ресурсов
+    syncPolicy:
+    automated:
+      allowEmpty: true
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PruneLast=true

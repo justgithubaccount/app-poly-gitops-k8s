@@ -1,0 +1,5 @@
+resources:
+  - application.yaml
+  - cloudflare-secrets.yaml
+  - cert-cluster.yaml
+  - issuer-cluster.yaml

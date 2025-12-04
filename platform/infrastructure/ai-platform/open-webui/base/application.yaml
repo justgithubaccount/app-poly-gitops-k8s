@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: open-webui
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: open-webui
+    env: dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  project: default
+  source:
+    repoURL: https://helm.openwebui.com
+    chart: open-webui
+    targetRevision: 8.9.0
+    helm:
+      values: |
+        replicaCount: 1
+        service:
+          type: ClusterIP
+          port: 80
+        ingress:
+          enabled: false
+        env:
+          - name: OPENAI_API_KEY
+            value: 
+          - name: OPENAI_API_BASE
+            value: http://chat-api.chat-api.svc.cluster.local:8000/v1
+        persistence:
+          enabled: true
+          size: 2Gi
+  destination:
+    name: CLUSTER
+    namespace: open-webui
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PruneLast=true

@@ -1,0 +1,12 @@
+# Observability values for dev cluster
+
+loki:
+  singleBinary:
+    replicas: 1
+    persistence:
+      size: 10Gi
+
+grafana:
+  adminPassword: admin
+  persistence:
+    enabled: false

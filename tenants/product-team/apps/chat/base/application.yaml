@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  labels:
+    app.kubernetes.io/name: chat-api
+    app.kubernetes.io/part-of: chat
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: backend
+    env: dev
+  name: chat-api
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+
+    argocd-image-updater.argoproj.io/image-list: chat=ghcr.io/justgithubaccount/chat-api:^1
+    argocd-image-updater.argoproj.io/chat.update-strategy: semver
+    argocd-image-updater.argoproj.io/chat.helm.image-tag: image.tag
+
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/write-back-target: clusters/dev/chat-values.yaml
+    argocd-image-updater.argoproj.io/write-back-target-branch: main
+    argocd-image-updater.argoproj.io/git-commit-user-name: justgithubaccount
+    argocd-image-updater.argoproj.io/git-commit-user-email: kulikovyevgeny@outlook.com
+
+    argocd-image-updater.argoproj.io/git-credentialSecret: chat-github 
+
+    # notifications.argoproj.io/subscribe.on-sync-succeeded.slack: chat-devops
+    # notifications.argoproj.io/subscribe.on-sync-failed.slack: chat-devops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/justgithubaccount/app-poly-gitops-helm
+    targetRevision: main
+    path: chat
+    helm:
+      valueFiles:
+        - values.yaml
+  # values из k8s-репы подтягиваются через additionalValueFiles или patch
+  # - ../../clusters/dev/chat-values.yaml
+  destination:
+    name: CLUSTER
+    namespace: chat-api
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PruneLast=true

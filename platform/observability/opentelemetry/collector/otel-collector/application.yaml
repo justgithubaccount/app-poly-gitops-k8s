@@ -1,0 +1,88 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vector-gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2" 
+spec:
+  project: default
+  source:
+    repoURL: https://helm.vector.dev
+    chart: vector
+    targetRevision: 0.44.0
+    helm:
+      values: |
+        role: "Stateless-Aggregator"
+
+        service:
+          enabled: true
+          ports:
+            - name: otlp-http
+              port: 4318
+            - name: otlp-grpc
+              port: 4317
+            - name: api
+              port: 8686
+
+        customConfig:
+          data_dir: /vector-data
+
+          api:
+            enabled: true
+            address: 0.0.0.0:8686
+
+          sources:
+            otel:
+              type: opentelemetry
+              http:
+                address: 0.0.0.0:4318
+              grpc:
+                address: 0.0.0.0:4317
+
+          transforms:
+            save_values:
+              type: remap
+              inputs: [otel.logs]
+              source: |
+                .resources = {
+                  "service.name": .resources."service.name",
+                  "k8s.namespace": .resources."k8s.namespace",
+                  "k8s.deployment.name": .resources."k8s.deployment.name",
+                  "k8s.container.name": .resources."k8s.container.name",
+                  "k8s.node.name": .resources."k8s.node.name",
+                  "deployment.environment": "dev"
+                }
+
+          sinks:
+            loki:
+              type: loki
+              inputs:
+                - save_values
+              endpoint: http://loki.observability.svc.cluster.local:3100
+              encoding:
+                codec: json
+              labels:
+                "resources_*": "{{`{{ resources }}`}}"
+                stream: "otel"
+              
+          debug:
+            type: console
+            inputs:
+              - otel.logs
+            encoding:
+              codec: json
+
+  destination:
+    name: CLUSTER
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PruneLast=true

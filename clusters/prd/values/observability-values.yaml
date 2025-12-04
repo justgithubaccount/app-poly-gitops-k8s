@@ -1,0 +1,12 @@
+# Observability values for prd cluster
+
+loki:
+  singleBinary:
+    replicas: 1
+    persistence:
+      size: 50Gi
+
+grafana:
+  persistence:
+    enabled: true
+    size: 5Gi

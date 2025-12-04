@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenant-apps
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: chat-api
+            path: tenants/product-team/apps/chat/base
+            namespace: chat-api
+  template:
+    metadata:
+      name: '{{name}}'
+      namespace: argocd
+    spec:
+      project: tenants
+      source:
+        repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true

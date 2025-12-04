@@ -1,0 +1,36 @@
+# apiVersion: kustomize.config.k8s.io/v1beta1
+# kind: Kustomization
+
+# namePrefix: prd-
+
+# resources:
+#   - ../../../base/addons/ingress-nginx
+#   - ../../../base/addons/cert-manager
+#   - ../../../base/addons/external-dns
+#   - ../../../base/addons/observability/loki
+#   - ../../../base/addons/observability/grafana
+#   - ../../../base/addons/longhorn
+#   - ../../../base/services/agent/chat
+#   - ../../../base/services/llm/gateway
+
+# # patches:
+# #   # Исправляем CLUSTER placeholder для всех Applications
+# #   - target:
+# #       kind: Application
+# #     patch: |-
+# #       - op: replace
+# #         path: /spec/destination/name
+# #         value: prd
+# #       - op: replace  
+# #         path: /spec/destination/server
+# #         value: https://kubernetes.default.svc
+
+# patches:
+#   - target:
+#       kind: Application
+#     patch: |-
+#       - op: remove
+#         path: /spec/destination/name
+#       - op: replace
+#         path: /spec/destination/server
+#         value: https://kubernetes.default.svc

@@ -1,0 +1,36 @@
+name: Validate K8s Manifests
+
+on:
+  pull_request:
+    paths:
+      - 'platform/**'
+      - 'clusters/**'
+      - 'tenants/**'
+      - 'policies/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup tools
+        run: |
+          curl -LO https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar -xf kubeconform-linux-amd64.tar.gz && sudo mv kubeconform /usr/local/bin
+          curl -LO https://openpolicyagent.org/downloads/latest/opa_linux_amd64
+          chmod +x opa_linux_amd64 && sudo mv opa_linux_amd64 /usr/local/bin/opa
+
+      - name: Validate Kustomize
+        run: |
+          kubectl kustomize clusters/${{ matrix.env }}/ > rendered.yaml
+
+      - name: Kubeconform validation
+        run: kubeconform -summary -strict rendered.yaml
+
+      - name: OPA policy check
+        run: |
+          opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]"

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: observability-apps
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: loki
+            path: platform/observability/monitoring/loki
+          - name: grafana
+            path: platform/observability/monitoring/grafana
+          - name: vector-gateway
+            path: platform/observability/opentelemetry/collector/otel-collector
+  template:
+    metadata:
+      name: '{{name}}'
+      namespace: argocd
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true

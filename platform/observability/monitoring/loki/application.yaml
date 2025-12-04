@@ -1,0 +1,108 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: loki
+    targetRevision: 6.30.1
+    helm:
+      values: |
+        deploymentMode: SingleBinary
+
+        singleBinary:
+          replicas: 1
+          persistence:
+            enabled: true
+            storageClass: longhorn
+            size: 10Gi
+
+        backend: { replicas: 0 }
+        read: { replicas: 0 }
+        write: { replicas: 0 }
+        ingester: { replicas: 0 }
+        querier: { replicas: 0 }
+        queryFrontend: { replicas: 0 }
+        queryScheduler: { replicas: 0 }
+        distributor: { replicas: 0 }
+        compactor: { replicas: 0 }
+        indexGateway: { replicas: 0 }
+        bloomCompactor: { replicas: 0 }
+        bloomGateway: { replicas: 0 }
+
+        gateway:
+          enabled: false
+        lokiCanary:
+          enabled: true
+        test:
+          enabled: true
+        grafana-agent-operator:
+          enabled: false
+        resultsCache:
+          enabled: false
+        chunksCache:
+          enabled: false
+
+        loki:
+          auth_enabled: false
+          commonConfig:
+            replication_factor: 1
+          pattern_ingester:
+            enabled: true
+          limits_config:
+            allow_structured_metadata: true
+            volume_enabled: true
+          ruler:
+            enable_api: true
+          storage:
+            type: s3
+            bucketNames:
+              chunks: ceae9495-3a627f83-8eba-441e-b648-37d41cded627
+              ruler: ceae9495-3a627f83-8eba-441e-b648-37d41cded627
+              admin: ceae9495-3a627f83-8eba-441e-b648-37d41cded627
+            s3:
+              endpoint: s3.twcstorage.ru
+              access_key_id: ${S3_ACCESS_KEY}
+              secret_access_key: ${S3_SECRET_KEY}
+              region: ru-1
+              insecure: true
+          schemaConfig:
+            configs:
+              - from: "2024-04-01"
+                store: tsdb
+                object_store: s3
+                schema: v13
+                index:
+                  prefix: loki_index_
+                  period: 24h
+
+        extraEnv:
+          - name: S3_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: loki-s3-secret
+                key: access_key
+          - name: S3_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: loki-s3-secret
+                key: secret_key
+
+  destination:
+    namespace: observability
+    name: CLUSTER
+
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PruneLast=true

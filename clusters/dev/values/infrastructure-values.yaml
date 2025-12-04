@@ -1,0 +1,13 @@
+# Infrastructure values for dev cluster
+# Override helm values here
+
+ingress-nginx:
+  controller:
+    replicaCount: 1
+
+cert-manager:
+  installCRDs: true
+
+longhorn:
+  persistence:
+    defaultClassReplicaCount: 1

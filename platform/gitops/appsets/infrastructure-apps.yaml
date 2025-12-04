@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: infrastructure-apps
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: sealed-secrets
+            path: platform/infrastructure/security/sealed-secrets/base
+          - name: reflector
+            path: platform/infrastructure/security/reflector/base
+          - name: external-secrets
+            path: platform/infrastructure/security/external-secrets/base
+          - name: ingress-nginx
+            path: platform/infrastructure/networking/nginx/base
+          - name: cert-manager
+            path: platform/infrastructure/networking/cert-manager/base
+          - name: external-dns
+            path: platform/infrastructure/networking/external-dns/base
+          - name: longhorn
+            path: platform/infrastructure/storage/longhorn/base
+          - name: open-webui
+            path: platform/infrastructure/ai-platform/open-webui/base
+  template:
+    metadata:
+      name: '{{name}}'
+      namespace: argocd
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true

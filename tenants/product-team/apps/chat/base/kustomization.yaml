@@ -1,0 +1,5 @@
+resources:
+  - application.yaml
+  - postgree-secrets.yaml
+  - openrouter-secrets.yaml
+  - github-secrets.yaml
