@@ -5,25 +5,52 @@ metadata:
   namespace: argocd
 spec:
   generators:
-    - list:
-        elements:
-          - name: chat-api
-            path: tenants/product-team/apps/chat/base
-            namespace: chat-api
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - app: chat
+                  team: product-team
+          - list:
+              elements:
+                - cluster: in-cluster
+                  env: dev
+                - cluster: tst-cluster
+                  env: tst
+                - cluster: stg-cluster
+                  env: stg
+                - cluster: prd-cluster
+                  env: prd
   template:
     metadata:
-      name: '{{name}}'
+      name: '{{team}}-{{app}}-{{env}}'
       namespace: argocd
+      labels:
+        team: '{{team}}'
+        app: '{{app}}'
+        env: '{{env}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
     spec:
       project: tenants
-      source:
-        repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
-        targetRevision: main
-        path: '{{path}}'
       destination:
-        server: https://kubernetes.default.svc
-        namespace: '{{namespace}}'
+        name: '{{cluster}}'
+        namespace: '{{team}}'
+      sources:
+        - repoURL: https://github.com/justgithubaccount/app-poly-gitops-helm
+          targetRevision: main
+          path: chat
+          helm:
+            valueFiles:
+              - values.yaml
+              - $values/values.yaml
+        - repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s
+          targetRevision: main
+          path: tenants/{{team}}/apps/{{app}}/overlays/{{env}}
+          ref: values
       syncPolicy:
         automated:
-          selfHeal: true
           prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
