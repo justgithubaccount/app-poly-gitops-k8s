@@ -75,11 +75,11 @@ spec:
                   team: product-team
           - list:
               elements:
-                - cluster: tst-cluster
+                - cluster: in-cluster
                   env: tst
-                - cluster: stg-cluster
+                - cluster: in-cluster
                   env: stg
-                - cluster: prd-cluster
+                - cluster: in-cluster
                   env: prd
   template:
     metadata:
