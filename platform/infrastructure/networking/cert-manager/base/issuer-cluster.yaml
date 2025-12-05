@@ -3,7 +3,7 @@ kind: ClusterIssuer
 metadata:
   name: letsencrypt-dns
   annotations:
-    argocd.argoproj.io/sync-wave: "2" 
+    argocd.argoproj.io/sync-wave: "100" 
 spec:
   acme:
     email: kulikovyevgeny@outlook.com
