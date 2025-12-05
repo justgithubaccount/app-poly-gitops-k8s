@@ -25,3 +25,4 @@ spec:
       - Validate=true
       - CreateNamespace=true
       - PruneLast=true
+      - SkipDryRunOnMissingResource=true
