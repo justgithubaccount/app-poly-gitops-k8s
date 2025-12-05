@@ -1,14 +1,27 @@
-# clusters/dev/bootstrap.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: root-app-dev
   namespace: argocd
+  labels:
+    tier: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
-  source:
-    repoURL: https://github.com/justgithubaccount/app-release.git
-    path: platform/core/cluster-bootstrap
-    targetRevision: main
   destination:
-    server: https://kubernetes.default.svc
     namespace: argocd
+    name: in-cluster
+  project: default
+  source:
+    repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
+    path: clusters/dev
+    targetRevision: main
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PruneLast=true
