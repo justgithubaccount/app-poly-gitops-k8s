@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev]
+        env: [dev, tst, stg, prd]
     steps:
       - uses: actions/checkout@v4
 
