@@ -1,0 +1,37 @@
+# TODO: Configure Dify deployment
+# Reference: https://github.com/langgenius/dify
+
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: dify
+#   namespace: argocd
+#   labels:
+#     app.kubernetes.io/name: dify
+#     app.kubernetes.io/part-of: ai-platform
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "10"
+# spec:
+#   project: default
+#   source:
+#     # Option 1: Official Helm chart (if available)
+#     # repoURL: https://charts.dify.ai
+#     # chart: dify
+#     # targetRevision: "0.x.x"
+#
+#     # Option 2: Git-based deployment
+#     repoURL: https://github.com/langgenius/dify.git
+#     path: docker/kubernetes
+#     targetRevision: main
+#   destination:
+#     name: CLUSTER
+#     namespace: dify
+#   syncPolicy:
+#     automated:
+#       allowEmpty: true
+#       selfHeal: true
+#       prune: true
+#     syncOptions:
+#       - Validate=true
+#       - CreateNamespace=true
+#       - PruneLast=true

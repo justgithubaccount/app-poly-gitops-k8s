@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev]
+        env: [dev, tst, stg, prd]
     steps:
       - uses: actions/checkout@v4
 
@@ -29,7 +29,10 @@ jobs:
           kubectl kustomize clusters/${{ matrix.env }}/ > rendered.yaml
 
       - name: Kubeconform validation
-        run: kubeconform -summary -strict rendered.yaml
+        run: |
+          kubeconform -summary -strict \
+            -skip Application,ApplicationSet,Certificate,ClusterIssuer,SealedSecret \
+            rendered.yaml
 
       - name: OPA policy check
         run: |

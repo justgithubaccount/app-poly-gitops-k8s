@@ -6,4 +6,4 @@ metadata:
 spec:
   project: default
   destination:
-    name: prd-cluster
+    name: tst-cluster

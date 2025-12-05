@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root-app-prd
+  name: root-app-tst
   namespace: argocd
   labels:
     tier: argocd
@@ -10,11 +10,11 @@ metadata:
 spec:
   destination:
     namespace: argocd
-    name: prd-cluster
+    name: tst-cluster
   project: default
   source:
     repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
-    path: clusters/prd
+    path: clusters/tst
     targetRevision: main
   syncPolicy:
     automated:

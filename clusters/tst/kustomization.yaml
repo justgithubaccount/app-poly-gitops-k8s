@@ -20,8 +20,8 @@ resources:
   - ../../platform/observability/opentelemetry/collector/otel-collector
   # GitOps
   - ../../platform/gitops/argocd-image-updater
-  # Tenants (uncomment when ready for production)
-  # - ../../tenants/product-team/apps/chat/base
+  # Tenants
+  - ../../tenants/product-team/apps/chat/base
 
 patches:
   - path: destination.yaml

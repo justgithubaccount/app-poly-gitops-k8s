@@ -1,8 +1,0 @@
-helm:
-  parameters:
-  - name: image.name
-    value: ghcr.io/justgithubaccount/chat-api
-    forcestring: true
-  - name: image.tag
-    value: 1.1.7
-    forcestring: true

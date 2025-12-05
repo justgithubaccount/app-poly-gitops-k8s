@@ -1,5 +1,6 @@
-resources:
-  - application.yaml
-  - postgree-secrets.yaml
-  - openrouter-secrets.yaml
-  - github-secrets.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Application managed by ApplicationSet in platform/gitops/appsets/tenant-apps.yaml
+# This directory contains shared resources for the chat application
+resources: []
