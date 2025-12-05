@@ -1,0 +1,17 @@
+image:
+  name: ghcr.io/justgithubaccount/chat-api
+  tag: "1.1.7"
+
+replicaCount: 2
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+ingress:
+  enabled: true
+  host: chat-dev.syncjob.ru
