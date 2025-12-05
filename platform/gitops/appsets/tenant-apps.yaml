@@ -1,9 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: tenant-apps
+  name: tenant-apps-dev
   namespace: argocd
 spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
   generators:
     - matrix:
         generators:
@@ -15,27 +17,28 @@ spec:
               elements:
                 - cluster: in-cluster
                   env: dev
-                - cluster: tst-cluster
-                  env: tst
-                - cluster: stg-cluster
-                  env: stg
-                - cluster: prd-cluster
-                  env: prd
   template:
     metadata:
-      name: '{{team}}-{{app}}-{{env}}'
+      name: '{{ .team }}-{{ .app }}-{{ .env }}'
       namespace: argocd
       labels:
-        team: '{{team}}'
-        app: '{{app}}'
-        env: '{{env}}'
+        team: '{{ .team }}'
+        app: '{{ .app }}'
+        env: '{{ .env }}'
+      annotations:
+        argocd-image-updater.argoproj.io/image-list: chat=ghcr.io/justgithubaccount/chat-api:~1
+        argocd-image-updater.argoproj.io/chat.update-strategy: semver
+        argocd-image-updater.argoproj.io/chat.helm.image-tag: image.tag
+        argocd-image-updater.argoproj.io/write-back-method: git
+        argocd-image-updater.argoproj.io/write-back-target: 'kustomization:tenants/{{ .team }}/apps/{{ .app }}/overlays/{{ .env }}/values.yaml'
+        argocd-image-updater.argoproj.io/git-branch: main
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
       project: tenants
       destination:
-        name: '{{cluster}}'
-        namespace: '{{team}}'
+        name: '{{ .cluster }}'
+        namespace: '{{ .team }}'
       sources:
         - repoURL: https://github.com/justgithubaccount/app-poly-gitops-helm
           targetRevision: main
@@ -46,7 +49,64 @@ spec:
               - $values/values.yaml
         - repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s
           targetRevision: main
-          path: tenants/{{team}}/apps/{{app}}/overlays/{{env}}
+          path: 'tenants/{{ .team }}/apps/{{ .app }}/overlays/{{ .env }}'
+          ref: values
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenant-apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - app: chat
+                  team: product-team
+          - list:
+              elements:
+                - cluster: tst-cluster
+                  env: tst
+                - cluster: stg-cluster
+                  env: stg
+                - cluster: prd-cluster
+                  env: prd
+  template:
+    metadata:
+      name: '{{ .team }}-{{ .app }}-{{ .env }}'
+      namespace: argocd
+      labels:
+        team: '{{ .team }}'
+        app: '{{ .app }}'
+        env: '{{ .env }}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: tenants
+      destination:
+        name: '{{ .cluster }}'
+        namespace: '{{ .team }}'
+      sources:
+        - repoURL: https://github.com/justgithubaccount/app-poly-gitops-helm
+          targetRevision: main
+          path: chat
+          helm:
+            valueFiles:
+              - values.yaml
+              - $values/values.yaml
+        - repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s
+          targetRevision: main
+          path: 'tenants/{{ .team }}/apps/{{ .app }}/overlays/{{ .env }}'
           ref: values
       syncPolicy:
         automated:
