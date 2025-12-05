@@ -1,16 +1,27 @@
-# clusters/prd/bootstrap.yaml
-# Uncomment when prd cluster is ready
-
-# apiVersion: argoproj.io/v1alpha1
-# kind: Application
-# metadata:
-#   name: root-app-prd
-#   namespace: argocd
-# spec:
-#   source:
-#     repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
-#     path: platform/core/cluster-bootstrap
-#     targetRevision: main
-#   destination:
-#     name: prd
-#     namespace: argocd
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-app-prd
+  namespace: argocd
+  labels:
+    tier: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: argocd
+    name: prd-cluster
+  project: default
+  source:
+    repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
+    path: clusters/prd
+    targetRevision: main
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PruneLast=true
