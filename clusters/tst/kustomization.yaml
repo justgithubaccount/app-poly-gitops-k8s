@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Security
+  - ../../platform/infrastructure/security/sealed-secrets/base
+  - ../../platform/infrastructure/security/reflector/base
+  - ../../platform/infrastructure/security/external-secrets/base
+  # Networking
+  - ../../platform/infrastructure/networking/nginx/base
+  - ../../platform/infrastructure/networking/cert-manager/base
+  - ../../platform/infrastructure/networking/external-dns/base
+  # Storage
+  - ../../platform/infrastructure/storage/longhorn/base
+  # AI Platform
+  - ../../platform/infrastructure/ai-platform/open-webui/base
+  # Observability
+  - ../../platform/observability/monitoring/loki
+  - ../../platform/observability/monitoring/grafana
+  - ../../platform/observability/opentelemetry/collector/otel-collector
+  # GitOps
+  - ../../platform/gitops/argocd-image-updater
+  # Tenants
+  - ../../tenants/product-team/apps/chat/base
+
+patches:
+  - path: destination.yaml
+    target:
+      kind: Application
