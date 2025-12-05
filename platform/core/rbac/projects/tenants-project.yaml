@@ -9,8 +9,29 @@ spec:
     - https://github.com/justgithubaccount/app-poly-gitops-k8s.git
     - https://github.com/justgithubaccount/app-poly-gitops-helm.git
   destinations:
+    # In-cluster (dev)
     - namespace: chat-api
       server: https://kubernetes.default.svc
+    # Multi-cluster destinations
+    - namespace: chat-api
+      name: tst-cluster
+    - namespace: chat-api
+      name: stg-cluster
+    - namespace: chat-api
+      name: prd-cluster
   clusterResourceWhitelist:
     - group: ''
       kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Secret
+    - group: ''
+      kind: Service
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: StatefulSet
+    - group: networking.k8s.io
+      kind: Ingress
