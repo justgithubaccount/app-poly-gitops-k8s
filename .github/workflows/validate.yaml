@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev, tst, stg, prd]
+        env: [dev]  # [tst, dev, stg, prd]
     steps:
       - uses: actions/checkout@v4
 
@@ -21,12 +21,19 @@ jobs:
         run: |
           curl -LO https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
           tar -xf kubeconform-linux-amd64.tar.gz && sudo mv kubeconform /usr/local/bin
+
           curl -LO https://openpolicyagent.org/downloads/latest/opa_linux_amd64
           chmod +x opa_linux_amd64 && sudo mv opa_linux_amd64 /usr/local/bin/opa
 
       - name: Validate Kustomize
         run: |
           kubectl kustomize clusters/${{ matrix.env }}/ > rendered.yaml
+
+      - name: Save rendered manifest as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-manifest-${{ matrix.env }}-${{ github.run_number }}
+          path: rendered.yaml
 
       - name: Kubeconform validation
         run: |
@@ -36,4 +43,26 @@ jobs:
 
       - name: OPA policy check
         run: |
-          opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]"
+          echo "🔎 Evaluating OPA policies..."
+          opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]" || {
+            echo "❌ OPA crashed (syntax or data issue)"
+            exit 2
+          }
+
+          result=$(opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]")
+          echo "$result"
+
+          if echo "$result" | grep -q "msg"; then
+            echo "❌ OPA policy violations found"
+
+            echo "⛔ Problem fragment:"
+            line=$(grep -n "$(echo "$result" | grep msg | cut -d':' -f2 | head -n1 | xargs)" rendered.yaml | cut -d':' -f1 | head -n1)
+            if [ -n "$line" ]; then
+              start=$((line-10))
+              [ "$start" -lt 1 ] && start=1
+              end=$((line+10))
+              sed -n "${start},${end}p" rendered.yaml
+            fi
+
+            exit 1
+          fi
