@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../base
-  - postgree-secrets.yaml
+  - postgres-cluster.yaml
   - openrouter-secrets.yaml
   - github-secrets.yaml
 
@@ -35,3 +35,10 @@ patches:
           ingress:
             enabled: true
             host: chat-dev.syncjob.ru
+          postgresSecretRefName: ""
+          extraEnv:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: chat-db-pguser-chatapi
+                  key: uri
