@@ -15,14 +15,14 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 10Gi
+            storage: 5Gi
       resources:
         limits:
-          cpu: "2"
-          memory: 2Gi
-        requests:
-          cpu: "500m"
+          cpu: "1"
           memory: 1Gi
+        requests:
+          cpu: "250m"
+          memory: 512Mi
 
   backups:
     pgbackrest:
@@ -35,28 +35,7 @@ spec:
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 5Gi
-
-  patroni:
-    dynamicConfiguration:
-      postgresql:
-        parameters:
-          max_connections: "150"
-          shared_buffers: "512MB"
-          effective_cache_size: "1536MB"
-          maintenance_work_mem: "128MB"
-          checkpoint_completion_target: "0.9"
-          wal_buffers: "16MB"
-          default_statistics_target: "100"
-          random_page_cost: "1.1"
-          effective_io_concurrency: "200"
-          work_mem: "3495kB"
-          min_wal_size: "1GB"
-          max_wal_size: "4GB"
-          max_worker_processes: "2"
-          max_parallel_workers_per_gather: "1"
-          max_parallel_workers: "2"
-          max_parallel_maintenance_workers: "1"
+                  storage: 2Gi
 
   users:
     - name: chatapi
