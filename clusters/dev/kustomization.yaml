@@ -16,6 +16,8 @@ resources:
   - ../../platform/infrastructure/networking/external-dns/base
   # Storage
   - ../../platform/infrastructure/storage/longhorn/base
+  # Database
+  - ../../platform/infrastructure/database/pgo/base
   # AI Platform
   - ../../platform/infrastructure/ai-platform/open-webui/base
   # Observability
