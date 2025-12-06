@@ -3,3 +3,36 @@ kind: Kustomization
 
 resources:
   - ../../base
+  # TODO: Create tst-specific SealedSecrets
+  # - postgree-secrets.yaml
+  # - openrouter-secrets.yaml
+  # - github-secrets.yaml
+
+patches:
+  - target:
+      kind: Application
+      name: chat-api
+    patch: |
+      - op: add
+        path: /metadata/labels/env
+        value: tst
+      - op: replace
+        path: /spec/source/helm/valueFiles
+        value:
+          - values.yaml
+      - op: add
+        path: /spec/source/helm/values
+        value: |
+          image:
+            tag: "1.1.7"
+          replicaCount: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          ingress:
+            enabled: true
+            host: chat-tst.syncjob.ru

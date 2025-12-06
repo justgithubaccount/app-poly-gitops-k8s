@@ -3,3 +3,36 @@ kind: Kustomization
 
 resources:
   - ../../base
+  # TODO: Create prd-specific SealedSecrets
+  # - postgree-secrets.yaml
+  # - openrouter-secrets.yaml
+  # - github-secrets.yaml
+
+patches:
+  - target:
+      kind: Application
+      name: chat-api
+    patch: |
+      - op: add
+        path: /metadata/labels/env
+        value: prd
+      - op: replace
+        path: /spec/source/helm/valueFiles
+        value:
+          - values.yaml
+      - op: add
+        path: /spec/source/helm/values
+        value: |
+          image:
+            tag: "1.1.7"
+          replicaCount: 3
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+          ingress:
+            enabled: true
+            host: chat.syncjob.ru

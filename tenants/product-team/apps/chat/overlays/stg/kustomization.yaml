@@ -3,3 +3,36 @@ kind: Kustomization
 
 resources:
   - ../../base
+  # TODO: Create stg-specific SealedSecrets
+  # - postgree-secrets.yaml
+  # - openrouter-secrets.yaml
+  # - github-secrets.yaml
+
+patches:
+  - target:
+      kind: Application
+      name: chat-api
+    patch: |
+      - op: add
+        path: /metadata/labels/env
+        value: stg
+      - op: replace
+        path: /spec/source/helm/valueFiles
+        value:
+          - values.yaml
+      - op: add
+        path: /spec/source/helm/values
+        value: |
+          image:
+            tag: "1.1.7"
+          replicaCount: 2
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 512Mi
+          ingress:
+            enabled: true
+            host: chat-stg.syncjob.ru
