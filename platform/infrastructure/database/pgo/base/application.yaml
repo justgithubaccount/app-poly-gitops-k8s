@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pgo-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: registry.developers.crunchydata.com/crunchydata
+    chart: pgo
+    targetRevision: "5.7.4"
+    helm:
+      values: |
+        singleNamespace: false
+  destination:
+    name: CLUSTER
+    namespace: postgres-operator
+  syncPolicy:
+    automated:
+      allowEmpty: true
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PruneLast=true
+      - ServerSideApply=true
