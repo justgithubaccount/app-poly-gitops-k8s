@@ -38,7 +38,7 @@ jobs:
       - name: Kubeconform validation
         run: |
           kubeconform -summary -strict \
-            -skip Application,ApplicationSet,Certificate,ClusterIssuer,SealedSecret \
+            -skip Application,ApplicationSet,Certificate,ClusterIssuer,SealedSecret,PostgresCluster \
             rendered.yaml
 
       - name: OPA policy check
