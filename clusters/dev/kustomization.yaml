@@ -4,6 +4,8 @@ kind: Kustomization
 # So let's prefix the app names with the cluster name (dev- | demo-worker1-)
 # namePrefix: dev-
 resources:
+  # Core - namespaces must be created first
+  - ../../platform/core/namespaces
   # Security
   - ../../platform/infrastructure/security/sealed-secrets/base
   - ../../platform/infrastructure/security/reflector/base
