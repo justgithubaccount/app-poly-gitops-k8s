@@ -65,13 +65,13 @@ spec:
               labels:
                 "resources_*": "{{`{{ resources }}`}}"
                 stream: "otel"
-              
-          debug:
-            type: console
-            inputs:
-              - otel.logs
-            encoding:
-              codec: json
+
+            debug:
+              type: console
+              inputs:
+                - otel.logs
+              encoding:
+                codec: json
 
   destination:
     name: CLUSTER
