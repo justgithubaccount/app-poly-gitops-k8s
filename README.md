@@ -42,24 +42,35 @@ Git Push → ArgoCD → Sync Applications → Kubernetes
 ## Компоненты
 
 ### Infrastructure
+
 | Компонент | Описание |
 |-----------|----------|
-| ingress-nginx | Ingress controller |
-| cert-manager | TLS сертификаты (Let's Encrypt) |
-| external-dns | DNS записи в Cloudflare |
-| sealed-secrets | Шифрование секретов в git |
+| ingress-nginx | Ingress controller (LoadBalancer) |
+| cert-manager | TLS сертификаты (Let's Encrypt DNS challenge) |
+| external-dns | Автоматические DNS записи в Cloudflare |
+| sealed-secrets | Шифрование секретов в git (kubeseal) |
 | external-secrets | Синхронизация секретов из внешних хранилищ |
 | reflector | Репликация секретов между namespace |
-| longhorn | Distributed storage |
+| longhorn | Distributed block storage |
+
+### Database
+
+| Компонент | Описание |
+|-----------|----------|
+| pgo-operator | Crunchy PostgreSQL (Patroni, enterprise-grade) |
+| cloudnative-pg | CloudNativePG (simple, recommended for dev) |
 
 ### Observability
+
 | Компонент | Описание |
 |-----------|----------|
 | Grafana | Дашборды и визуализация |
 | Loki | Агрегация логов |
-| OTEL Collector | Сбор телеметрии |
+| Vector | Log collector и transformer |
+| OTEL Collector | OpenTelemetry (OTLP → Loki) |
 
 ### AI Platform
+
 | Компонент | Описание |
 |-----------|----------|
 | Open WebUI | UI для LLM моделей |
@@ -117,9 +128,22 @@ opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]"
 
 ## Требования
 
-- Kubernetes кластер
+- Kubernetes кластер (Timeweb Cloud или другой)
 - ArgoCD установлен в namespace `argocd`
-- Доступ к GitHub репозиторию
+- Доступ к GitHub репозиториям
+
+## Документация
+
+- [Architecture](docs/architecture.md) — архитектура платформы и компонентов
+- [Golden Install](docs/golden-install.md) — чистая установка с нуля
+
+## Связанные репозитории
+
+| Репозиторий | Назначение |
+|-------------|------------|
+| [app-poly-gitops-infra](https://github.com/justgithubaccount/app-poly-gitops-infra) | Terraform + ArgoCD bootstrap |
+| [app-poly-gitops-helm](https://github.com/justgithubaccount/app-poly-gitops-helm) | Helm charts |
+| [app-poly-gitops-fastapi](https://github.com/justgithubaccount/app-poly-gitops-fastapi) | FastAPI приложение (chat-api) |
 
 ## Лицензия
 
