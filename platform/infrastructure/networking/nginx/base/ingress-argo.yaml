@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "3"
     # cert-manager.io/cluster-issuer: letsencrypt-dns
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # disabled: ArgoCD runs in insecure mode (HTTP)
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
