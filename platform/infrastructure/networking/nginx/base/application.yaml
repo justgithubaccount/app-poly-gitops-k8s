@@ -30,14 +30,7 @@ spec:
             enabled: true
           admissionWebhooks:
             enabled: false
-  # syncPolicy:
-  #   automated:
-  #     selfHeal: true
-  #     prune: true
-  #   syncOptions:
-  #     - CreateNamespace=true
-  #     - Replace=true  # Для пересоздания проблемных ресурсов
-    syncPolicy:
+  syncPolicy:
     automated:
       allowEmpty: true
       selfHeal: true
