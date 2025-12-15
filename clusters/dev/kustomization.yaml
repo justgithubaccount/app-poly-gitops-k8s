@@ -18,6 +18,7 @@ resources:
   - ../../platform/infrastructure/storage/longhorn/base
   # Database
   - ../../platform/infrastructure/database/pgo/base
+  - ../../platform/infrastructure/database/cloudnative-pg/base
   # AI Platform
   - ../../platform/infrastructure/ai-platform/open-webui/base
   # Observability
