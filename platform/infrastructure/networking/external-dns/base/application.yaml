@@ -28,7 +28,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: cloudflare-token
-                key: CLOUDFLARE_TOKEN
+                key: CF_API_TOKEN
   syncPolicy:
     automated:
       allowEmpty: true
