@@ -23,7 +23,7 @@ grep -q 'key: openai-api-key' "$rendered_runtime"
 grep -q 'name: chat-api' "$rendered_smoke"
 grep -q 'name: crewai' "$rendered_smoke"
 grep -q 'targetRevision: v0.4.0' "$rendered_smoke"
-grep -q 'targetRevision: v1.2.0' "$rendered_smoke"
+grep -q 'targetRevision: v1.2.2' "$rendered_smoke"
 
 if grep -Eq 'targetRevision: (main|[0-9a-f]{40})' "$rendered_smoke"; then
   echo "smoke environment contains a floating branch or opaque commit revision" >&2
