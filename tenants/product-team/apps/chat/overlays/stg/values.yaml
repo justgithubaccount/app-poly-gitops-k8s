@@ -1,6 +1,6 @@
 image:
-  name: ghcr.io/justgithubaccount/chat-api
-  tag: "1.1.7"
+  repository: ghcr.io/justgithubaccount/app-poly-gitops-fastapi
+  tag: "1.1.1"
 
 replicaCount: 2
 

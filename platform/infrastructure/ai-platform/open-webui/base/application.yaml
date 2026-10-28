@@ -26,7 +26,7 @@ spec:
           - name: OPENAI_API_KEY
             value: 
           - name: OPENAI_API_BASE
-            value: http://chat-api.chat-api.svc.cluster.local:8000/v1
+            value: http://chat-api.chat-api.svc.cluster.local:80/v1
         persistence:
           enabled: true
           size: 2Gi

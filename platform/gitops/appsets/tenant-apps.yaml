@@ -26,7 +26,7 @@ spec:
         app: '{{ .app }}'
         env: '{{ .env }}'
       annotations:
-        argocd-image-updater.argoproj.io/image-list: chat=ghcr.io/justgithubaccount/chat-api:~1
+        argocd-image-updater.argoproj.io/image-list: chat=ghcr.io/justgithubaccount/app-poly-gitops-fastapi:~1
         argocd-image-updater.argoproj.io/chat.update-strategy: semver
         argocd-image-updater.argoproj.io/chat.helm.image-tag: image.tag
         argocd-image-updater.argoproj.io/write-back-method: git
@@ -41,8 +41,8 @@ spec:
         namespace: '{{ .team }}'
       sources:
         - repoURL: https://github.com/justgithubaccount/app-poly-gitops-helm
-          targetRevision: main
-          path: chat
+          targetRevision: c3f071092d36b3cf02728aa7e06785a343e68f3c
+          path: .
           helm:
             valueFiles:
               - values.yaml
@@ -98,8 +98,8 @@ spec:
         namespace: '{{ .team }}'
       sources:
         - repoURL: https://github.com/justgithubaccount/app-poly-gitops-helm
-          targetRevision: main
-          path: chat
+          targetRevision: c3f071092d36b3cf02728aa7e06785a343e68f3c
+          path: .
           helm:
             valueFiles:
               - values.yaml
