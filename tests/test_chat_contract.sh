@@ -16,6 +16,7 @@ fi
 
 grep -q 'targetRevision: c3f071092d36b3cf02728aa7e06785a343e68f3c' \
   "${repo_root}/tenants/product-team/apps/chat/base/application.yaml"
+grep -q 'PostgresCluster,Cluster' "${repo_root}/.github/workflows/validate.yaml"
 
 for env in dev tst stg prd; do
   grep -q 'repository: ghcr.io/justgithubaccount/app-poly-gitops-fastapi' \
