@@ -2,6 +2,10 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+rendered_smoke="$(mktemp)"
+trap 'rm -f "${rendered_smoke}"' EXIT
+
+kubectl kustomize "${repo_root}/clusters/smoke" >"${rendered_smoke}"
 
 if grep -R -q --include='*.yaml' 'ghcr.io/justgithubaccount/chat-api' \
   "${repo_root}/tenants" "${repo_root}/platform/gitops"; then
@@ -16,6 +20,11 @@ fi
 
 grep -q 'targetRevision: v0.4.1' \
   "${repo_root}/tenants/product-team/apps/chat/base/application.yaml"
+grep -q 'apiUrl: https://api.openai.com/v1/chat/completions' "${rendered_smoke}"
+grep -q 'defaultModel: gpt-4o-mini' "${rendered_smoke}"
+grep -q 'name: OPENROUTER_API_KEY' "${rendered_smoke}"
+grep -q 'name: chat-openrouter' "${rendered_smoke}"
+grep -q 'optional: true' "${rendered_smoke}"
 awk '
   /repoURL: https:\/\/github.com\/justgithubaccount\/app-poly-gitops-helm/ {
     getline
