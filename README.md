@@ -67,9 +67,7 @@ Git Push → ArgoCD → Sync Applications → Kubernetes
 |-----------|----------|
 | Grafana | Дашборды и визуализация |
 | Loki | Агрегация логов |
-| Vector | Log collector и transformer |
-| OTEL Collector | OpenTelemetry (OTLP → Loki) |
-| Jaeger | Внутренний trace backend; приложения отправляют OTLP через Vector |
+| Vector | Единый OTLP gateway: логи в Loki, структурированный trace output для отладки |
 
 ### AI Platform
 
@@ -79,9 +77,10 @@ Git Push → ArgoCD → Sync Applications → Kubernetes
 | AutoK8sPilot | Read-only CrewAI наблюдатель за Kubernetes |
 
 `clusters/dev` — основной entrypoint приложения. Он включает FastAPI, CrewAI,
-PostgreSQL, Loki, Grafana, Vector и Jaeger. Приложения используют Vector как
-единственную OTLP-точку: логи маршрутизируются в Loki, а трейсы — во внутренний
-Jaeger. `clusters/smoke` остаётся сокращённым CI-профилем и не заменяет dev.
+PostgreSQL, Loki, Grafana и Vector. Приложения используют Vector как единственную
+OTLP-точку: логи маршрутизируются в Loki, а трейсы доступны в структурированном
+output Vector для точечной отладки. Отдельный Jaeger в dev не разворачивается.
+`clusters/smoke` остаётся сокращённым CI-профилем и не заменяет dev.
 
 ## Добавление нового приложения
 

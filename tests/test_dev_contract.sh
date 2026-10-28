@@ -16,8 +16,11 @@ kubectl kustomize \
 grep -q 'name: chat-api' "${rendered_dev}"
 grep -q 'name: crewai' "${rendered_dev}"
 grep -q 'path: tenants/product-team/apps/crewai/overlays/dev' "${rendered_dev}"
-grep -Fq 'targetRevision: v1.4.0' "${rendered_dev}"
-grep -q 'image: cr.jaegertracing.io/jaegertracing/jaeger:2.22.0' "${rendered_dev}"
+grep -Fq 'targetRevision: v1.4.1' "${rendered_dev}"
+if grep -q 'image: cr.jaegertracing.io/jaegertracing/jaeger:' "${rendered_dev}"; then
+  echo 'dev includes a redundant Jaeger backend instead of using Vector' >&2
+  exit 1
+fi
 grep -q 'name: loki' "${rendered_dev}"
 grep -q 'name: grafana' "${rendered_dev}"
 grep -q 'name: vector-gateway' "${rendered_dev}"
@@ -32,11 +35,14 @@ grep -q 'OTEL_LOGS_EXPORTER: otlp' "${rendered_dev}"
 grep -q 'value: http://vector-gateway.observability.svc.cluster.local:4318' \
   "${rendered_crewai}"
 
-# Vector routes logs to Loki and traces to the internal trace backend.
+# Vector routes logs to Loki and exposes traces on its own structured output.
 grep -q 'inputs: \[otel.logs\]' "${vector_values}"
 grep -q 'inputs: \[otel.traces\]' "${vector_values}"
-grep -q 'uri: http://jaeger.observability.svc.cluster.local:4318/v1/traces' \
-  "${vector_values}"
+grep -A4 '^    traces:' "${vector_values}" | grep -q 'type: console'
+if grep -q 'jaeger.observability.svc.cluster.local' "${vector_values}"; then
+  echo 'Vector dev config still depends on Jaeger' >&2
+  exit 1
+fi
 grep -q 'inputs: \[otel.metrics\]' "${vector_values}"
 if grep -Fq '"deployment.environment": "dev"' "${vector_values}"; then
   echo 'shared Vector config overwrites the emitting service environment' >&2
