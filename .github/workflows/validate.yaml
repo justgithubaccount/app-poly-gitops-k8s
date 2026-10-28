@@ -31,6 +31,9 @@ jobs:
       - name: Validate release dependencies
         run: npm ci --ignore-scripts
 
+      - name: Validate release notes generation
+        run: node tests/test_release_notes.mjs
+
       - name: Setup tools
         run: |
           curl -LO https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
