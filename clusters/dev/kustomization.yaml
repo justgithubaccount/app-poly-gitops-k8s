@@ -25,13 +25,90 @@ resources:
   - ../../platform/observability/monitoring/loki
   - ../../platform/observability/monitoring/grafana
   - ../../platform/observability/opentelemetry/collector/otel-collector
+  - ../../platform/observability/jaeger/smoke
   # GitOps
   - ../../platform/gitops/argocd-image-updater
   # Tenants
   - ../../tenants/product-team/apps/chat/overlays/dev
+  - ../../tenants/product-team/apps/crewai/base
 
 patches:
   # Override .spec.destination.name
   - path: destination.yaml
     target:
       kind: Application
+  - target:
+      kind: Application
+      name: crewai
+    patch: |-
+      - op: replace
+        path: /spec/source/path
+        value: tenants/product-team/apps/crewai/overlays/dev
+      - op: replace
+        path: /spec/source/targetRevision
+        value: v1.4.0
+  - target:
+      kind: Application
+      name: loki
+    patch: |-
+      - op: replace
+        path: /spec/source/helm/values
+        value: |-
+          deploymentMode: SingleBinary
+
+          singleBinary:
+            replicas: 1
+            persistence:
+              enabled: true
+              storageClass: longhorn
+              size: 5Gi
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+
+          backend: { replicas: 0 }
+          read: { replicas: 0 }
+          write: { replicas: 0 }
+          ingester: { replicas: 0 }
+          querier: { replicas: 0 }
+          queryFrontend: { replicas: 0 }
+          queryScheduler: { replicas: 0 }
+          distributor: { replicas: 0 }
+          compactor: { replicas: 0 }
+          indexGateway: { replicas: 0 }
+          bloomCompactor: { replicas: 0 }
+          bloomGateway: { replicas: 0 }
+
+          gateway:
+            enabled: false
+          lokiCanary:
+            enabled: false
+          test:
+            enabled: false
+          resultsCache:
+            enabled: false
+          chunksCache:
+            enabled: false
+
+          loki:
+            auth_enabled: false
+            commonConfig:
+              replication_factor: 1
+            limits_config:
+              allow_structured_metadata: true
+              volume_enabled: true
+            schemaConfig:
+              configs:
+                - from: "2024-04-01"
+                  store: tsdb
+                  object_store: filesystem
+                  schema: v13
+                  index:
+                    prefix: loki_index_
+                    period: 24h
+            storage:
+              type: filesystem

@@ -1,0 +1,58 @@
+role: Stateless-Aggregator
+
+service:
+  enabled: true
+  ports:
+    - name: otlp-http
+      port: 4318
+    - name: otlp-grpc
+      port: 4317
+    - name: api
+      port: 8686
+
+customConfig:
+  data_dir: /vector-data
+
+  api:
+    enabled: true
+    address: 0.0.0.0:8686
+
+  sources:
+    otel:
+      type: opentelemetry
+      http:
+        address: 0.0.0.0:4318
+      grpc:
+        address: 0.0.0.0:4317
+      decoding:
+        codec: otlp
+        signal_types: [traces]
+
+  sinks:
+    loki:
+      type: loki
+      inputs: [otel.logs]
+      endpoint: http://loki.observability.svc.cluster.local:3100
+      encoding:
+        codec: json
+      labels:
+        stream: otel
+
+    traces:
+      type: opentelemetry
+      inputs: [otel.traces]
+      protocol:
+        type: http
+        uri: http://jaeger.observability.svc.cluster.local:4318/v1/traces
+        encoding:
+          codec: otlp
+
+    drop_metrics:
+      type: blackhole
+      inputs: [otel.metrics]
+
+    debug:
+      type: console
+      inputs: [otel.logs]
+      encoding:
+        codec: json

@@ -38,6 +38,8 @@ jobs:
         run: |
           bash tests/test_chat_contract.sh
           bash tests/test_crewai_contract.sh
+          bash tests/test_dev_contract.sh
+          bash tests/test_vector_config.sh
 
       - name: Setup tools
         run: |

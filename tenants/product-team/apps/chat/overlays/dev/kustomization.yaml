@@ -25,18 +25,25 @@ patches:
         value: |
           image:
             repository: ghcr.io/justgithubaccount/app-poly-gitops-fastapi
-            tag: "1.1.1"
-          replicaCount: 2
+            tag: "1.1.2"
+          replicaCount: 1
           resources:
             limits:
               cpu: 1000m
               memory: 1Gi
             requests:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 100m
+              memory: 256Mi
           ingress:
             enabled: true
             host: chat-dev.syncjob.ru
+          env:
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://vector-gateway.observability.svc.cluster.local:4318
+            OTEL_TRACES_EXPORTER: otlp
+            OTEL_LOGS_EXPORTER: otlp
+          openrouter:
+            apiUrl: https://api.openai.com/v1/chat/completions
+            defaultModel: gpt-4o-mini
           postgresSecretRefName: ""
           openrouterSecretRefName: chat-openrouter
           extraEnv:
