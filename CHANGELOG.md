@@ -1,3 +1,9 @@
+## [1.3.1](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.3.0...v1.3.1) (2026-10-28)
+
+### 🐛 Bug Fixes
+
+* keep smoke LLM config in GitOps ([#18](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/18)) ([ef77ada](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/ef77ada33febe0643df0663666fe7621e801e3e5))
+
 ## [1.3.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.2.2...v1.3.0) (2026-10-28)
 
 ### 🚀 Features
