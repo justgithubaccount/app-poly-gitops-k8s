@@ -1,3 +1,9 @@
+## [1.4.2](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.4.1...v1.4.2) (2026-10-28)
+
+### 🐛 Bug Fixes
+
+* keep dev focused on app runtime ([44b3860](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/44b38606af854df7a93a0f284925fc9ce57c8d57))
+
 ## [1.4.1](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.4.0...v1.4.1) (2026-10-28)
 
 ### 🐛 Bug Fixes
