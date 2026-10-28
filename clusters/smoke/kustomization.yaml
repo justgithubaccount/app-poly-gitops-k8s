@@ -4,3 +4,24 @@ kind: Kustomization
 resources:
   - ../../tenants/product-team/apps/chat/base
   - ../../tenants/product-team/apps/crewai/base
+  - ../../platform/observability/jaeger/smoke
+
+patches:
+  - target:
+      kind: Application
+      name: chat-api
+    patch: |-
+      - op: add
+        path: /spec/source/helm/values
+        value: |-
+          env:
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger.observability.svc.cluster.local:4318
+            OTEL_TRACES_EXPORTER: otlp
+            OTEL_LOGS_EXPORTER: none
+  - target:
+      kind: Application
+      name: crewai
+    patch: |-
+      - op: replace
+        path: /spec/source/path
+        value: tenants/product-team/apps/crewai/overlays/smoke

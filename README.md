@@ -69,6 +69,7 @@ Git Push → ArgoCD → Sync Applications → Kubernetes
 | Loki | Агрегация логов |
 | Vector | Log collector и transformer |
 | OTEL Collector | OpenTelemetry (OTLP → Loki) |
+| Jaeger | Lightweight in-memory trace backend for the smoke environment |
 
 ### AI Platform
 
