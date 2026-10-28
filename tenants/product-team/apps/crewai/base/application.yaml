@@ -13,7 +13,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s
-    targetRevision: v1.2.2
+    targetRevision: v1.2.3
     path: tenants/product-team/apps/crewai/runtime
   destination:
     name: in-cluster

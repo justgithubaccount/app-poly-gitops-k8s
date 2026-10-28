@@ -14,7 +14,7 @@ if grep -R -q --include='*.yaml' 'path: chat' "${repo_root}/platform/gitops"; th
   exit 1
 fi
 
-grep -q 'targetRevision: v0.4.0' \
+grep -q 'targetRevision: v0.4.1' \
   "${repo_root}/tenants/product-team/apps/chat/base/application.yaml"
 awk '
   /repoURL: https:\/\/github.com\/justgithubaccount\/app-poly-gitops-helm/ {
