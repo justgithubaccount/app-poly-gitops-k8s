@@ -18,6 +18,16 @@ patches:
             OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger.observability.svc.cluster.local:4318
             OTEL_TRACES_EXPORTER: otlp
             OTEL_LOGS_EXPORTER: none
+          openrouter:
+            apiUrl: https://api.openai.com/v1/chat/completions
+            defaultModel: gpt-4o-mini
+          extraEnv:
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: chat-openrouter
+                  key: OPENROUTER_API_KEY
+                  optional: true
   - target:
       kind: Application
       name: crewai
