@@ -39,13 +39,10 @@ customConfig:
         stream: otel
 
     traces:
-      type: opentelemetry
+      type: console
       inputs: [otel.traces]
-      protocol:
-        type: http
-        uri: http://jaeger.observability.svc.cluster.local:4318/v1/traces
-        encoding:
-          codec: otlp
+      encoding:
+        codec: json
 
     drop_metrics:
       type: blackhole

@@ -25,7 +25,6 @@ resources:
   - ../../platform/observability/monitoring/loki
   - ../../platform/observability/monitoring/grafana
   - ../../platform/observability/opentelemetry/collector/otel-collector
-  - ../../platform/observability/jaeger/smoke
   # GitOps
   - ../../platform/gitops/argocd-image-updater
   # Tenants
@@ -46,7 +45,7 @@ patches:
         value: tenants/product-team/apps/crewai/overlays/dev
       - op: replace
         path: /spec/source/targetRevision
-        value: v1.4.0
+        value: v1.4.1
   - target:
       kind: Application
       name: loki

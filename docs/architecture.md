@@ -39,7 +39,6 @@ flowchart TB
                 LOKI[loki]
                 GRAF[grafana]
                 VEC[vector]
-                JAEGER[jaeger]
             end
 
             subgraph TENANT_NS["Tenant Namespaces"]
@@ -62,7 +61,7 @@ flowchart TB
     CHAT --> CHATDB
     CHAT -->|OTLP| VEC
     VEC -->|logs| LOKI
-    VEC -->|traces| JAEGER
+    VEC -->|structured traces| VECLOG[debug output]
     LOKI --> GRAF
 ```
 
@@ -118,7 +117,7 @@ chat-api / CrewAI (OpenTelemetry SDK)
     ↓ OTLP/HTTP
 Vector gateway
     ├─ logs → Loki → Grafana
-    └─ traces → Jaeger
+    └─ traces → structured Vector output
 ```
 
 ### Secret Management
