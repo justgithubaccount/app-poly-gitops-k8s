@@ -41,7 +41,7 @@ spec:
         namespace: '{{ .team }}'
       sources:
         - repoURL: https://github.com/justgithubaccount/app-poly-gitops-helm
-          targetRevision: c3f071092d36b3cf02728aa7e06785a343e68f3c
+          targetRevision: main
           path: .
           helm:
             valueFiles:
@@ -98,7 +98,7 @@ spec:
         namespace: '{{ .team }}'
       sources:
         - repoURL: https://github.com/justgithubaccount/app-poly-gitops-helm
-          targetRevision: c3f071092d36b3cf02728aa7e06785a343e68f3c
+          targetRevision: main
           path: .
           helm:
             valueFiles:
