@@ -1,3 +1,9 @@
+## [1.4.3](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.4.2...v1.4.3) (2026-10-28)
+
+### 🐛 Bug Fixes
+
+* mount writable Loki dev storage ([0a49265](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/0a4926514d78fe0424f76f83a1f59c918bb2497d))
+
 ## [1.4.2](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.4.1...v1.4.2) (2026-10-28)
 
 ### 🐛 Bug Fixes
