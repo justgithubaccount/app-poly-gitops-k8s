@@ -53,6 +53,9 @@ fi
 grep -q 'type: filesystem' "${rendered_dev}"
 grep -q 'persistence:' "${rendered_dev}"
 grep -q 'enabled: false' "${rendered_dev}"
+grep -q 'mountPath: /var/loki' "${rendered_dev}"
+grep -q 'name: loki-storage' "${rendered_dev}"
+grep -q 'emptyDir: {}' "${rendered_dev}"
 if grep -q 'name: loki-s3-secret' "${rendered_dev}"; then
   echo 'dev Loki still depends on the old cluster-bound S3 secret' >&2
   exit 1

@@ -44,6 +44,12 @@ patches:
             replicas: 1
             persistence:
               enabled: false
+            extraVolumeMounts:
+              - name: loki-storage
+                mountPath: /var/loki
+            extraVolumes:
+              - name: loki-storage
+                emptyDir: {}
             resources:
               requests:
                 cpu: 100m
