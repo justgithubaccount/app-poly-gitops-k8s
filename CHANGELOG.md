@@ -1,3 +1,9 @@
+## [1.2.2](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.2.1...v1.2.2) (2026-10-28)
+
+### 🐛 Bug Fixes
+
+* align CrewAI application revision ([#16](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/16)) ([15ab2a2](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/15ab2a21cd91610543c07b3e8f316eead2ace94e))
+
 ## [1.2.1](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.2.0...v1.2.1) (2026-10-28)
 
 ### 🐛 Bug Fixes
