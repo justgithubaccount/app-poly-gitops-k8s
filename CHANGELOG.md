@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.1.0...v1.2.0) (2026-10-28)
+
+### 🚀 Features
+
+* wire CrewAI LLM runtime secret ([#14](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/14)) ([3d6c0ba](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/3d6c0ba8726d8c9ea21f7ba52479b029d75056de))
+
 ## [1.1.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.0.0...v1.1.0) (2026-10-28)
 
 ### 🚀 Features
