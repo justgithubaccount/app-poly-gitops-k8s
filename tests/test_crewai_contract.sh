@@ -9,7 +9,7 @@ trap 'rm -f "$rendered_runtime" "$rendered_smoke"' EXIT
 kubectl kustomize "${repo_root}/tenants/product-team/apps/crewai/runtime" >"$rendered_runtime"
 kubectl kustomize "${repo_root}/clusters/smoke" >"$rendered_smoke"
 
-grep -q 'image: ghcr.io/justgithubaccount/app-poly-gitops-crewai:0.1.1' "$rendered_runtime"
+grep -q 'image: ghcr.io/justgithubaccount/app-poly-gitops-crewai:0.1.2' "$rendered_runtime"
 grep -q 'serviceAccountName: crewai' "$rendered_runtime"
 grep -q 'automountServiceAccountToken: true' "$rendered_runtime"
 grep -q 'runAsNonRoot: true' "$rendered_runtime"
