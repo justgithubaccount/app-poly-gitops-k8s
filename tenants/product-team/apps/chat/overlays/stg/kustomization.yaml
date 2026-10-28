@@ -24,7 +24,8 @@ patches:
         path: /spec/source/helm/values
         value: |
           image:
-            tag: "1.1.7"
+            repository: ghcr.io/justgithubaccount/app-poly-gitops-fastapi
+            tag: "1.1.1"
           replicaCount: 2
           resources:
             limits:
