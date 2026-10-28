@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.0.0...v1.1.0) (2026-10-28)
+
+### 🚀 Features
+
+* add CrewAI smoke workload ([#13](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/13)) ([138fafb](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/138fafba32f8d688d5304b403e386b98a147cc06))
+
 ## 1.0.0 (2026-10-28)
 
 ### 🚀 Features
