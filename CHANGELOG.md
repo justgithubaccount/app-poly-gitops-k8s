@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.3.1...v1.4.0) (2026-10-28)
+
+### 🚀 Features
+
+* make dev the complete application cluster ([#19](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/19)) ([4c82dbc](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/4c82dbccc0213cf1390175a7f835ef735ee72e87))
+
 ## [1.3.1](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.3.0...v1.3.1) (2026-10-28)
 
 ### 🐛 Bug Fixes
