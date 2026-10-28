@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crewai
+  namespace: crewai-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: crewai
+          env:
+            - name: OTEL_SDK_DISABLED
+              value: "false"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://vector-gateway.observability.svc.cluster.local:4318
+            - name: OTEL_TRACES_EXPORTER
+              value: otlp

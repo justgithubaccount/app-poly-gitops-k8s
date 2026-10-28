@@ -1,29 +1,29 @@
 image:
   repository: ghcr.io/justgithubaccount/app-poly-gitops-fastapi
-  tag: "1.1.1"
+  tag: "1.1.2"
 
-replicaCount: 2
+replicaCount: 1
 
 resources:
   limits:
     cpu: 1000m
     memory: 1Gi
   requests:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 100m
+    memory: 256Mi
 
 ingress:
   enabled: true
   host: chat-dev.syncjob.ru
 
-# Disable SealedSecret for postgres (using PGO instead)
+# Disable the chart-managed Postgres secret; CloudNativePG creates it.
 postgresSecretRefName: ""
 openrouterSecretRefName: chat-openrouter
 
-# Use PGO-generated secret for DATABASE_URL
+# Use the CloudNativePG-generated secret for DATABASE_URL.
 extraEnv:
   - name: DATABASE_URL
     valueFrom:
       secretKeyRef:
-        name: chat-db-pguser-chatapi
+        name: chat-db-cnpg-app
         key: uri

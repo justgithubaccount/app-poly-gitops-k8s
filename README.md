@@ -6,7 +6,7 @@ GitOps-репозиторий для управления Kubernetes-инфра�
 
 ```
 ├── clusters/           # Конфигурации окружений
-│   ├── dev/            # Development кластер
+│   ├── dev/            # Полный development app-cluster
 │   ├── smoke/          # Минимальный одноразовый E2E кластер
 │   └── prd/            # Production кластер
 ├── platform/           # Платформенные компоненты
@@ -69,7 +69,7 @@ Git Push → ArgoCD → Sync Applications → Kubernetes
 | Loki | Агрегация логов |
 | Vector | Log collector и transformer |
 | OTEL Collector | OpenTelemetry (OTLP → Loki) |
-| Jaeger | Lightweight in-memory trace backend for the smoke environment |
+| Jaeger | Внутренний trace backend; приложения отправляют OTLP через Vector |
 
 ### AI Platform
 
@@ -77,6 +77,11 @@ Git Push → ArgoCD → Sync Applications → Kubernetes
 |-----------|----------|
 | Open WebUI | UI для LLM моделей |
 | AutoK8sPilot | Read-only CrewAI наблюдатель за Kubernetes |
+
+`clusters/dev` — основной entrypoint приложения. Он включает FastAPI, CrewAI,
+PostgreSQL, Loki, Grafana, Vector и Jaeger. Приложения используют Vector как
+единственную OTLP-точку: логи маршрутизируются в Loki, а трейсы — во внутренний
+Jaeger. `clusters/smoke` остаётся сокращённым CI-профилем и не заменяет dev.
 
 ## Добавление нового приложения
 

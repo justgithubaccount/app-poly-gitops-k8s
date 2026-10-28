@@ -38,8 +38,8 @@ flowchart TB
             subgraph OBS["Observability"]
                 LOKI[loki]
                 GRAF[grafana]
-                OTEL[otel-collector]
                 VEC[vector]
+                JAEGER[jaeger]
             end
 
             subgraph TENANT_NS["Tenant Namespaces"]
@@ -60,8 +60,9 @@ flowchart TB
     INFRA_REPO -->|bootstrap| ARGOCD
 
     CHAT --> CHATDB
-    CHAT -->|OTLP| OTEL
-    OTEL -->|logs| LOKI
+    CHAT -->|OTLP| VEC
+    VEC -->|logs| LOKI
+    VEC -->|traces| JAEGER
     LOKI --> GRAF
 ```
 
@@ -113,13 +114,11 @@ Developer Push → GitHub → ArgoCD Sync → Kubernetes Apply
 ### Observability Pipeline
 
 ```
-chat-api (OpenTelemetry SDK)
-    ↓ OTLP/gRPC
-otel-collector (receiver → processor → exporter)
-    ↓ Loki API
-loki (log storage)
-    ↓ LogQL
-grafana (visualization)
+chat-api / CrewAI (OpenTelemetry SDK)
+    ↓ OTLP/HTTP
+Vector gateway
+    ├─ logs → Loki → Grafana
+    └─ traces → Jaeger
 ```
 
 ### Secret Management
