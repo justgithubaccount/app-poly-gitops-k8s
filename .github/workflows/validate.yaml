@@ -7,6 +7,11 @@ on:
       - 'clusters/**'
       - 'tenants/**'
       - 'policies/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.releaserc.json'
+      - '.github/workflows/release.yaml'
+      - '.github/workflows/validate.yaml'
 
 jobs:
   validate:
@@ -16,6 +21,15 @@ jobs:
         env: [dev]  # [tst, dev, stg, prd]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js release toolchain
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: npm
+
+      - name: Validate release dependencies
+        run: npm ci --ignore-scripts
 
       - name: Setup tools
         run: |
