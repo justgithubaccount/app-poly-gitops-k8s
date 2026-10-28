@@ -6,21 +6,6 @@ kind: Kustomization
 resources:
   # Core - namespaces must be created first
   - ../../platform/core/namespaces
-  # Security
-  - ../../platform/infrastructure/security/sealed-secrets/base
-  - ../../platform/infrastructure/security/reflector/base
-  - ../../platform/infrastructure/security/external-secrets/base
-  # Networking
-  - ../../platform/infrastructure/networking/nginx/base
-  - ../../platform/infrastructure/networking/cert-manager/base
-  - ../../platform/infrastructure/networking/external-dns/base
-  # Storage
-  - ../../platform/infrastructure/storage/longhorn/base
-  # Database
-  - ../../platform/infrastructure/database/pgo/base
-  - ../../platform/infrastructure/database/cloudnative-pg/base
-  # AI Platform
-  - ../../platform/infrastructure/ai-platform/open-webui/base
   # Observability
   - ../../platform/observability/monitoring/loki
   - ../../platform/observability/monitoring/grafana
@@ -45,7 +30,7 @@ patches:
         value: tenants/product-team/apps/crewai/overlays/dev
       - op: replace
         path: /spec/source/targetRevision
-        value: v1.4.1
+        value: v1.4.2
   - target:
       kind: Application
       name: loki
@@ -58,9 +43,7 @@ patches:
           singleBinary:
             replicas: 1
             persistence:
-              enabled: true
-              storageClass: longhorn
-              size: 5Gi
+              enabled: false
             resources:
               requests:
                 cpu: 100m

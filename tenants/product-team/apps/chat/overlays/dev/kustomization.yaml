@@ -3,10 +3,6 @@ kind: Kustomization
 
 resources:
   - ../../base
-  # - postgres-cluster.yaml  # Crunchy PGO - disabled, using CloudNativePG instead
-  - cnpg-cluster.yaml
-  - openrouter-secrets.yaml
-  - github-secrets.yaml
 
 patches:
   - target:
@@ -35,7 +31,7 @@ patches:
               cpu: 100m
               memory: 256Mi
           ingress:
-            enabled: true
+            enabled: false
             host: chat-dev.syncjob.ru
           env:
             OTEL_EXPORTER_OTLP_ENDPOINT: http://vector-gateway.observability.svc.cluster.local:4318
@@ -46,9 +42,3 @@ patches:
             defaultModel: gpt-4o-mini
           postgresSecretRefName: ""
           openrouterSecretRefName: chat-openrouter
-          extraEnv:
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: chat-db-cnpg-app
-                  key: uri

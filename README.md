@@ -77,10 +77,14 @@ Git Push → ArgoCD → Sync Applications → Kubernetes
 | AutoK8sPilot | Read-only CrewAI наблюдатель за Kubernetes |
 
 `clusters/dev` — основной entrypoint приложения. Он включает FastAPI, CrewAI,
-PostgreSQL, Loki, Grafana и Vector. Приложения используют Vector как единственную
+Loki, Grafana и Vector. Приложения используют Vector как единственную
 OTLP-точку: логи маршрутизируются в Loki, а трейсы доступны в структурированном
 output Vector для точечной отладки. Отдельный Jaeger в dev не разворачивается.
-`clusters/smoke` остаётся сокращённым CI-профилем и не заменяет dev.
+Секреты приложения подаются средой деплоя, а локальный dev-runtime использует
+SQLite и ephemeral Loki storage: root не применяет CR до установки их операторов
+и не поднимает неиспользуемые платные компоненты. Дополнительные platform-модули
+остаются доступными в `platform/`, но подключаются отдельным профилем. `clusters/smoke`
+остаётся сокращённым CI-профилем и не заменяет dev.
 
 ## Добавление нового приложения
 

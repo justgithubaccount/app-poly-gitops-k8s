@@ -16,7 +16,7 @@ kubectl kustomize \
 grep -q 'name: chat-api' "${rendered_dev}"
 grep -q 'name: crewai' "${rendered_dev}"
 grep -q 'path: tenants/product-team/apps/crewai/overlays/dev' "${rendered_dev}"
-grep -Fq 'targetRevision: v1.4.1' "${rendered_dev}"
+grep -Fq 'targetRevision: v1.4.2' "${rendered_dev}"
 if grep -q 'image: cr.jaegertracing.io/jaegertracing/jaeger:' "${rendered_dev}"; then
   echo 'dev includes a redundant Jaeger backend instead of using Vector' >&2
   exit 1
@@ -51,8 +51,21 @@ fi
 
 # A clean dev cluster must not depend on a SealedSecret encrypted for another cluster.
 grep -q 'type: filesystem' "${rendered_dev}"
+grep -q 'persistence:' "${rendered_dev}"
+grep -q 'enabled: false' "${rendered_dev}"
 if grep -q 'name: loki-s3-secret' "${rendered_dev}"; then
   echo 'dev Loki still depends on the old cluster-bound S3 secret' >&2
+  exit 1
+fi
+
+# Root must contain only resources the base Kubernetes API and Argo CD can apply.
+if grep -Eq '^kind: (Certificate|ClusterIssuer|SealedSecret|Cluster)$' "${rendered_dev}"; then
+  echo 'dev root contains a custom resource before its operator CRD exists' >&2
+  exit 1
+fi
+if grep -Eq '^  name: (longhorn|cloudnative-pg|pgo-operator|external-dns|cert-manager)$' \
+  "${rendered_dev}"; then
+  echo 'dev includes platform components not required by the application runtime' >&2
   exit 1
 fi
 
