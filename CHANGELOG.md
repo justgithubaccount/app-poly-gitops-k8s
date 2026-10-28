@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.2.2...v1.3.0) (2026-10-28)
+
+### 🚀 Features
+
+* add smoke trace pipeline ([#17](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/17)) ([968344e](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/968344e085ddb066f8204b117f01153ceb6e401b))
+
 ## [1.2.2](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.2.1...v1.2.2) (2026-10-28)
 
 ### 🐛 Bug Fixes
