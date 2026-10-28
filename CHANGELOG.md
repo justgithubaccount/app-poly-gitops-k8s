@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.2.0...v1.2.1) (2026-10-28)
+
+### 🐛 Bug Fixes
+
+* deploy grounded CrewAI health reports ([#15](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/15)) ([bbdefb8](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/bbdefb8d03b95fbc00bd8afa5f12e7f0965b09e6))
+
 ## [1.2.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.1.0...v1.2.0) (2026-10-28)
 
 ### 🚀 Features
