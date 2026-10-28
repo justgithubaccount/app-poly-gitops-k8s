@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crewai
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: crewai
+    app.kubernetes.io/part-of: auto-k8s-pilot
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s
+    targetRevision: v1.1.0
+    path: tenants/product-team/apps/crewai/runtime
+  destination:
+    name: in-cluster
+    namespace: crewai-system
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

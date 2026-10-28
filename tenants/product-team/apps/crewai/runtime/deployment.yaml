@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crewai
+  namespace: crewai-system
+  labels:
+    app.kubernetes.io/name: crewai
+    app.kubernetes.io/part-of: auto-k8s-pilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: crewai
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: crewai
+        app.kubernetes.io/part-of: auto-k8s-pilot
+    spec:
+      serviceAccountName: crewai
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: crewai
+          image: ghcr.io/justgithubaccount/app-poly-gitops-crewai:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: ALLOW_MUTATING
+              value: "false"
+            - name: DEFAULT_NAMESPACE
+              value: default
+            - name: ENVIRONMENT
+              value: production
+            - name: HOME
+              value: /tmp
+            - name: OTEL_SDK_DISABLED
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: output
+              mountPath: /app/output
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: output
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

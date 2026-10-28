@@ -7,6 +7,7 @@ GitOps-репозиторий для управления Kubernetes-инфра�
 ```
 ├── clusters/           # Конфигурации окружений
 │   ├── dev/            # Development кластер
+│   ├── smoke/          # Минимальный одноразовый E2E кластер
 │   └── prd/            # Production кластер
 ├── platform/           # Платформенные компоненты
 │   ├── core/           # Bootstrap ArgoCD, RBAC
@@ -74,6 +75,7 @@ Git Push → ArgoCD → Sync Applications → Kubernetes
 | Компонент | Описание |
 |-----------|----------|
 | Open WebUI | UI для LLM моделей |
+| AutoK8sPilot | Read-only CrewAI наблюдатель за Kubernetes |
 
 ## Добавление нового приложения
 

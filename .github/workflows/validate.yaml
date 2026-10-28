@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev]  # [tst, dev, stg, prd]
+        env: [dev, smoke]
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +33,11 @@ jobs:
 
       - name: Validate release notes generation
         run: node tests/test_release_notes.mjs
+
+      - name: Validate application contracts
+        run: |
+          bash tests/test_chat_contract.sh
+          bash tests/test_crewai_contract.sh
 
       - name: Setup tools
         run: |
