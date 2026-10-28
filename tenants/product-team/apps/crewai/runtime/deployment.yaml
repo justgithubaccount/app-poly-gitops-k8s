@@ -28,7 +28,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: crewai
-          image: ghcr.io/justgithubaccount/app-poly-gitops-crewai:0.1.0
+          image: ghcr.io/justgithubaccount/app-poly-gitops-crewai:0.1.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -45,6 +45,11 @@ spec:
               value: /tmp
             - name: OTEL_SDK_DISABLED
               value: "true"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: crewai-llm
+                  key: openai-api-key
           readinessProbe:
             httpGet:
               path: /health
