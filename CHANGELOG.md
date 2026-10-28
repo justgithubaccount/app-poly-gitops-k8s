@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.4.0...v1.4.1) (2026-10-28)
+
+### 🐛 Bug Fixes
+
+* route dev traces through Vector ([729da1d](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/729da1ddced4abbb02f6e8067e7d93d752d28289))
+
 ## [1.4.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.3.1...v1.4.0) (2026-10-28)
 
 ### 🚀 Features
