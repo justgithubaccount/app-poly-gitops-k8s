@@ -1,0 +1,93 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - namespaces.yaml
+
+patches:
+  # Only the installed dev services get public entrypoints.
+  - patch: |-
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: open-webui
+        namespace: open-webui
+      $patch: delete
+  - target:
+      kind: Application
+      name: ingress-nginx
+    patch: |-
+      - op: replace
+        path: /spec/source/helm/values
+        value: |-
+          controller:
+            kind: Deployment
+            replicaCount: 1
+            allowSnippetAnnotations: false
+            ingressClassResource:
+              name: nginx
+              enabled: true
+              default: true
+            service:
+              type: LoadBalancer
+            admissionWebhooks:
+              enabled: false
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 256Mi
+  - target:
+      kind: Ingress
+    patch: |-
+      - op: add
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-dns
+      - op: add
+        path: /metadata/annotations/external-dns.alpha.kubernetes.io~1enabled
+        value: "true"
+      - op: add
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1ssl-redirect
+        value: "true"
+  - target:
+      kind: Ingress
+      name: argocd-server
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/secretName
+        value: argocd-server-tls
+      - op: replace
+        path: /spec/rules/0/http/paths/0/backend/service/port/number
+        value: 80
+  - target:
+      kind: Ingress
+      name: grafana
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/secretName
+        value: grafana-tls
+  - target:
+      kind: Ingress
+      name: chat-api
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: chat-dev.syncjob.ru
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: chat-dev.syncjob.ru
+      - op: replace
+        path: /spec/tls/0/secretName
+        value: chat-api-tls
+      - op: add
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-type
+        value: basic
+      - op: add
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-secret
+        value: chat-api-basic-auth
+      - op: add
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-realm
+        value: Authentication required

@@ -7,6 +7,7 @@ on:
       - 'clusters/**'
       - 'tenants/**'
       - 'policies/**'
+      - 'tests/**'
       - 'package.json'
       - 'package-lock.json'
       - '.releaserc.json'
@@ -40,6 +41,12 @@ jobs:
           bash tests/test_crewai_contract.sh
           bash tests/test_dev_contract.sh
           bash tests/test_vector_config.sh
+
+      - name: Validate public dev networking
+        run: |
+          python3 -m venv "${RUNNER_TEMP}/dev-networking-tests"
+          "${RUNNER_TEMP}/dev-networking-tests/bin/python" -m pip install 'PyYAML==6.0.2'
+          "${RUNNER_TEMP}/dev-networking-tests/bin/python" tests/test_dev_networking.py
 
       - name: Setup tools
         run: |

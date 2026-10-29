@@ -6,6 +6,10 @@ kind: Kustomization
 resources:
   # Core - namespaces must be created first
   - ../../platform/core/namespaces
+  # Public dev web entrypoints, automatic Cloudflare DNS and per-namespace TLS.
+  - ../../platform/infrastructure/networking/nginx/overlays/dev
+  - ../../platform/infrastructure/networking/cert-manager/overlays/dev
+  - ../../platform/infrastructure/networking/external-dns/overlays/dev
   # Observability
   - ../../platform/observability/monitoring/loki
   - ../../platform/observability/monitoring/grafana
@@ -21,6 +25,34 @@ patches:
   - path: destination.yaml
     target:
       kind: Application
+  - target:
+      kind: Application
+      name: grafana
+    patch: |-
+      - op: replace
+        path: /spec/source/helm/values
+        value: |-
+          # Provisioned once outside Helm: Argo renders must not rotate passwords.
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
+          service:
+            type: ClusterIP
+          grafana.ini:
+            server:
+              domain: grafana.syncjob.ru
+              root_url: https://grafana.syncjob.ru
+            auth.anonymous:
+              enabled: false
+          datasources:
+            datasources.yaml:
+              apiVersion: 1
+              datasources:
+                - name: Loki
+                  type: loki
+                  access: proxy
+                  url: http://loki.observability.svc.cluster.local:3100
   - target:
       kind: Application
       name: crewai

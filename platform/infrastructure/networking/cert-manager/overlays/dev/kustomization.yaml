@@ -1,0 +1,56 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+patches:
+  # Custom resources belong to the child application, after CRD/webhook readiness.
+  - patch: |-
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      metadata:
+        name: wildcard-syncjob
+        namespace: chat-api
+      $patch: delete
+  - patch: |-
+      apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      metadata:
+        name: letsencrypt-dns
+      $patch: delete
+  - target:
+      kind: Application
+      name: cert-manager
+    patch: |-
+      - op: replace
+        path: /spec/source/helm/values
+        value: |-
+          crds:
+            enabled: true
+          extraArgs:
+            - --dns01-recursive-nameservers-only
+            - --dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53
+          extraObjects:
+            - |
+              apiVersion: cert-manager.io/v1
+              kind: ClusterIssuer
+              metadata:
+                name: letsencrypt-dns
+                annotations:
+                  argocd.argoproj.io/sync-wave: "10"
+                  argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+              spec:
+                acme:
+                  server: https://acme-v02.api.letsencrypt.org/directory
+                  privateKeySecretRef:
+                    name: letsencrypt-dns-key
+                  solvers:
+                    - selector:
+                        dnsZones:
+                          - syncjob.ru
+                      dns01:
+                        cloudflare:
+                          apiTokenSecretRef:
+                            name: cloudflare-token
+                            key: CF_API_TOKEN
