@@ -66,7 +66,7 @@ if grep -Eq '^kind: (Certificate|ClusterIssuer|SealedSecret|Cluster)$' "${render
   echo 'dev root contains a custom resource before its operator CRD exists' >&2
   exit 1
 fi
-if grep -Eq '^  name: (longhorn|cloudnative-pg|pgo-operator|external-dns|cert-manager)$' \
+if grep -Eq '^  name: (longhorn|cloudnative-pg|pgo-operator)$' \
   "${rendered_dev}"; then
   echo 'dev includes platform components not required by the application runtime' >&2
   exit 1

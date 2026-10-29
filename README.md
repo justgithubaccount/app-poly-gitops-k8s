@@ -145,6 +145,7 @@ opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]"
 
 ## Документация
 
+- [Dev web entrypoints](docs/DEV-WEBS.md) — Argo CD, Grafana и FastAPI: DNS, TLS и свежие секреты
 - [Architecture](docs/architecture.md) — архитектура платформы и компонентов
 - [Golden Install](docs/golden-install.md) — чистая установка с нуля
 

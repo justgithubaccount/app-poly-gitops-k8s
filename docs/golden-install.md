@@ -2,6 +2,10 @@
 
 Руководство по чистой установке платформы с нуля.
 
+Для текущего `clusters/dev` используйте [Dev web entrypoints](DEV-WEBS.md):
+там описаны три основных адреса и свежие Cloudflare/basic-auth секреты.
+Старые SealedSecrets и reflector из общего руководства для dev не нужны.
+
 ## Prerequisites
 
 - Timeweb Cloud account с API токеном
