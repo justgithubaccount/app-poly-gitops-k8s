@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.4.3...v1.5.0) (2026-10-29)
+
+### 🚀 Features
+
+* restore dev web ingress with automatic DNS and TLS ([da124f9](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/da124f9b94943ebec827967657bf6513ddb9ce17))
+
 ## [1.4.3](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.4.2...v1.4.3) (2026-10-28)
 
 ### 🐛 Bug Fixes
