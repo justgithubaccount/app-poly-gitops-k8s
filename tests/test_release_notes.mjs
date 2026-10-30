@@ -18,7 +18,11 @@ const logger = { log() {} };
 const suppressedRelease = await analyzeCommits(
   analyzerConfig,
   {
-    commits: [{ message: "chore(no-release): clean configuration comments" }],
+    commits: [
+      { message: "chore(no-release): clean configuration comments" },
+      { message: "test(no-release): guard release suppression" },
+      { message: "docs(no-release): modernize documentation" },
+    ],
     logger,
   },
 );
