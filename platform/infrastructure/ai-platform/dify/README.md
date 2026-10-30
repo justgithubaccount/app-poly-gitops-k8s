@@ -1,8 +1,11 @@
 # Dify AI Platform
 
-## Status: TODO
+## Status: SCAFFOLD
 
-Placeholder for Dify LLM application development platform.
+Documentation placeholder for a possible Dify integration. This directory is
+not referenced by any environment root or ApplicationSet and intentionally
+renders no Kubernetes resources. The old comment-only `base/application.yaml`
+was not executable configuration and has been removed.
 
 ## Tasks
 
@@ -11,7 +14,8 @@ Placeholder for Dify LLM application development platform.
 - [ ] Configure persistent storage for Dify data
 - [ ] Set up authentication integration
 - [ ] Configure integration with existing AI platform (Open WebUI)
-- [ ] Add to ApplicationSet or clusters kustomization
+- [ ] Obtain an explicit ownership/activation decision before adding it to an
+      ApplicationSet or environment root
 
 ## Links
 

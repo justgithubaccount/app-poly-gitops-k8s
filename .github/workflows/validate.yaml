@@ -12,15 +12,15 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.releaserc.json'
+      - 'README.md'
+      - 'docs/**'
+      - '.claude/CLAUDE.md'
       - '.github/workflows/release.yaml'
       - '.github/workflows/validate.yaml'
 
 jobs:
-  validate:
+  contracts:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        env: [dev, smoke]
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +33,9 @@ jobs:
       - name: Validate release dependencies
         run: npm ci --ignore-scripts
 
+      - name: Reject critical dependency vulnerabilities
+        run: npm audit --audit-level=critical
+
       - name: Validate release notes generation
         run: node tests/test_release_notes.mjs
 
@@ -43,23 +46,51 @@ jobs:
           bash tests/test_dev_contract.sh
           bash tests/test_vector_config.sh
 
-      - name: Validate public dev networking
+      - name: Create manifest validation environment
         run: |
           python3 -m venv "${RUNNER_TEMP}/manifest-validation"
           "${RUNNER_TEMP}/manifest-validation/bin/python" -m pip install 'PyYAML==6.0.2'
+
+      - name: Validate GitOps ownership contracts
+        run: |
+          "${RUNNER_TEMP}/manifest-validation/bin/python" tests/test_gitops_ownership.py -v
+
+      - name: Validate public dev networking
+        run: |
           "${RUNNER_TEMP}/manifest-validation/bin/python" tests/test_dev_networking.py
 
-      - name: Setup tools
+      - name: Setup OPA
+        run: |
+          curl -LO https://openpolicyagent.org/downloads/latest/opa_linux_amd64
+          chmod +x opa_linux_amd64 && sudo mv opa_linux_amd64 /usr/local/bin/opa
+
+      - name: Validate OPA policies
+        run: opa check policies/
+
+      - name: Validate OPA multi-document handling
+        run: |
+          "${RUNNER_TEMP}/manifest-validation/bin/python" tests/test_opa_multidoc.py -v
+
+  render:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, smoke]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create manifest validation environment
+        run: |
+          python3 -m venv "${RUNNER_TEMP}/manifest-validation"
+          "${RUNNER_TEMP}/manifest-validation/bin/python" -m pip install 'PyYAML==6.0.2'
+
+      - name: Setup manifest validation tools
         run: |
           curl -LO https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
           tar -xf kubeconform-linux-amd64.tar.gz && sudo mv kubeconform /usr/local/bin
 
           curl -LO https://openpolicyagent.org/downloads/latest/opa_linux_amd64
           chmod +x opa_linux_amd64 && sudo mv opa_linux_amd64 /usr/local/bin/opa
-
-      - name: Validate OPA multi-document handling
-        run: |
-          "${RUNNER_TEMP}/manifest-validation/bin/python" tests/test_opa_multidoc.py -v
 
       - name: Validate Kustomize
         run: |

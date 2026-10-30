@@ -6,7 +6,7 @@ Kustomize.
 
 ## Overview
 
-Two environment roots are active and validated in CI:
+Two environment roots are supported and validated in CI:
 
 | Root | Purpose | Included services |
 | --- | --- | --- |
@@ -19,7 +19,9 @@ CI matrix. The additional operators under `platform/` are reusable building
 blocks, not evidence that they are enabled in either active root.
 
 No running cluster is implied by this repository. Argo CD applies an environment
-only after a separately authorized provisioning and bootstrap step.
+only after a separately authorized provisioning and bootstrap step. The exact
+root/child ownership and the intentionally dormant alternative entrypoints are
+listed in [GitOps ownership and reconciliation](docs/ownership.md).
 
 ## Architecture
 
@@ -28,6 +30,13 @@ Argo CD `Application` objects for platform and tenant components. The FastAPI
 application is packaged by
 [app-poly-gitops-helm](https://github.com/justgithubaccount/app-poly-gitops-helm);
 CrewAI uses manifests stored in this repository.
+
+The infrastructure repository has two verified bootstrap paths: a versioned
+`Application/dev-cluster` for manual dev bootstrap and a versioned
+`Application/gitops-smoke-root` used by smoke and retained-dev workflows.
+`root-app.yaml`, environment `bootstrap.yaml` files, and the ApplicationSets are
+possible manual/scaffold entrypoints; they are not composed by the supported
+roots and must not be activated alongside them without an ownership migration.
 
 The dev telemetry path is:
 
@@ -63,7 +72,9 @@ bash tests/test_vector_config.sh
 python3 -m venv /tmp/app-poly-manifest-validation
 /tmp/app-poly-manifest-validation/bin/python -m pip install 'PyYAML==6.0.2'
 /tmp/app-poly-manifest-validation/bin/python tests/test_dev_networking.py
+/tmp/app-poly-manifest-validation/bin/python tests/test_gitops_ownership.py
 npm ci --ignore-scripts
+npm audit --audit-level=critical
 node tests/test_release_notes.mjs
 ~~~
 
@@ -94,6 +105,7 @@ These checks do not provision infrastructure or mutate Kubernetes.
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [GitOps ownership and reconciliation](docs/ownership.md)
 - [Golden install](docs/golden-install.md)
 - [Dev web entrypoints](docs/DEV-WEBS.md)
 
