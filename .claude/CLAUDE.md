@@ -8,8 +8,7 @@
 
 Текущие CI-supported roots:
 
-- `clusters/dev` — FastAPI, CrewAI, networking, Loki, Grafana, Vector и Image
-  Updater;
+- `clusters/dev` — FastAPI, CrewAI, networking, Loki, Grafana и Vector;
 - `clusters/smoke` — FastAPI, CrewAI и локальный Jaeger;
 - `clusters/tst`, `clusters/stg`, `clusters/prd` — неполные scaffolds.
 
