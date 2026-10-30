@@ -43,7 +43,8 @@ The smoke root uses a small Jaeger deployment instead. See
 ## Getting started
 
 Requirements: `kubectl` with Kustomize support, Helm 3, OPA, Node.js 22.22.2,
-and optionally `kubeconform`.
+Python 3, and optionally `kubeconform`. The networking test pins
+`PyYAML==6.0.2`.
 
 Render the CI-supported roots without contacting a cluster:
 
@@ -59,7 +60,9 @@ bash tests/test_chat_contract.sh
 bash tests/test_crewai_contract.sh
 bash tests/test_dev_contract.sh
 bash tests/test_vector_config.sh
-python3 tests/test_dev_networking.py
+python3 -m venv /tmp/app-poly-networking-tests
+/tmp/app-poly-networking-tests/bin/python -m pip install 'PyYAML==6.0.2'
+/tmp/app-poly-networking-tests/bin/python tests/test_dev_networking.py
 npm ci --ignore-scripts
 node tests/test_release_notes.mjs
 ~~~

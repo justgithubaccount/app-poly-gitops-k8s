@@ -114,7 +114,9 @@ remain unchanged.
 ## Offline validation
 
 ~~~bash
-python3 tests/test_dev_networking.py
+python3 -m venv /tmp/app-poly-networking-tests
+/tmp/app-poly-networking-tests/bin/python -m pip install 'PyYAML==6.0.2'
+/tmp/app-poly-networking-tests/bin/python tests/test_dev_networking.py
 bash tests/test_dev_contract.sh
 ~~~
 
