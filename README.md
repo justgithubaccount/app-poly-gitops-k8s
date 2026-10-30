@@ -1,162 +1,107 @@
-# GitOps Kubernetes Platform
+# Kubernetes GitOps Platform
 
-GitOps-репозиторий для управления Kubernetes-инфраструктурой через ArgoCD.
+Argo CD desired state for the `app-poly-gitops` engineering lab. The repository
+assembles application, networking, observability, and GitOps components with
+Kustomize.
 
-## Архитектура
+## Overview
 
-```
-├── clusters/           # Конфигурации окружений
-│   ├── dev/            # Полный development app-cluster
-│   ├── smoke/          # Минимальный одноразовый E2E кластер
-│   └── prd/            # Production кластер
-├── platform/           # Платформенные компоненты
-│   ├── core/           # Bootstrap ArgoCD, RBAC
-│   ├── gitops/         # ApplicationSets, Image Updater
-│   ├── infrastructure/ # Инфраструктура (nginx, cert-manager, storage)
-│   └── observability/  # Мониторинг (Grafana, Loki, OTEL)
-├── tenants/            # Приложения команд
-│   └── product-team/   # Tenant: product-team
-├── policies/           # OPA Rego политики
-└── .github/workflows/  # CI валидация
-```
+Two environment roots are active and validated in CI:
 
-## Как это работает
+| Root | Purpose | Included services |
+| --- | --- | --- |
+| `clusters/dev` | Complete application development profile | FastAPI, CrewAI, ingress-nginx, cert-manager, external-dns, Loki, Grafana, Vector, image updater |
+| `clusters/smoke` | Small disposable acceptance profile | FastAPI, CrewAI, and Jaeger |
 
-### App-of-Apps паттерн
+`clusters/tst`, `clusters/stg`, and `clusters/prd` are retained scaffolding.
+They contain incomplete environment wiring and are not validated by the current
+CI matrix. The additional operators under `platform/` are reusable building
+blocks, not evidence that they are enabled in either active root.
 
-1. **Root Application** (`platform/core/cluster-bootstrap/app-of-apps.yaml`) указывает на `clusters/<env>/`
-2. **Kustomization** (`clusters/<env>/kustomization.yaml`) собирает все ArgoCD Applications
-3. **Патчи** подставляют правильный destination кластер через `destination.yaml`
+No running cluster is implied by this repository. Argo CD applies an environment
+only after a separately authorized provisioning and bootstrap step.
 
-```
-Git Push → ArgoCD → Sync Applications → Kubernetes
-              ↑
-    argocd-image-updater (автообновление образов)
-```
+## Architecture
 
-### Sync Waves
+Argo CD reads one `clusters/<environment>` Kustomize root. That root renders
+Argo CD `Application` objects for platform and tenant components. The FastAPI
+application is packaged by
+[app-poly-gitops-helm](https://github.com/justgithubaccount/app-poly-gitops-helm);
+CrewAI uses manifests stored in this repository.
 
-Порядок деплоя контролируется через `argocd.argoproj.io/sync-wave`:
-- `0` — Ingress, базовая инфраструктура
-- `5` — Приложения (chat-api)
+The dev telemetry path is:
 
-## Компоненты
+~~~text
+FastAPI / CrewAI -> OTLP/HTTP -> Vector
+                                |-> logs -> Loki -> Grafana
+                                `-> traces -> structured Vector output
+~~~
 
-### Infrastructure
+The smoke root uses a small Jaeger deployment instead. See
+[docs/architecture.md](docs/architecture.md) for component boundaries.
 
-| Компонент | Описание |
-|-----------|----------|
-| ingress-nginx | Ingress controller (LoadBalancer) |
-| cert-manager | TLS сертификаты (Let's Encrypt DNS challenge) |
-| external-dns | Автоматические DNS записи в Cloudflare |
-| sealed-secrets | Шифрование секретов в git (kubeseal) |
-| external-secrets | Синхронизация секретов из внешних хранилищ |
-| reflector | Репликация секретов между namespace |
-| longhorn | Distributed block storage |
+## Getting started
 
-### Database
+Requirements: `kubectl` with Kustomize support, Helm 3, OPA, Node.js 22.22.2,
+Python 3, and optionally `kubeconform`. The networking test pins
+`PyYAML==6.0.2`.
 
-| Компонент | Описание |
-|-----------|----------|
-| pgo-operator | Crunchy PostgreSQL (Patroni, enterprise-grade) |
-| cloudnative-pg | CloudNativePG (simple, recommended for dev) |
+Render the CI-supported roots without contacting a cluster:
 
-### Observability
+~~~bash
+kubectl kustomize clusters/dev > /tmp/app-poly-dev.yaml
+kubectl kustomize clusters/smoke > /tmp/app-poly-smoke.yaml
+~~~
 
-| Компонент | Описание |
-|-----------|----------|
-| Grafana | Дашборды и визуализация |
-| Loki | Агрегация логов |
-| Vector | Единый OTLP gateway: логи в Loki, структурированный trace output для отладки |
+Run repository contracts:
 
-### AI Platform
+~~~bash
+bash tests/test_chat_contract.sh
+bash tests/test_crewai_contract.sh
+bash tests/test_dev_contract.sh
+bash tests/test_vector_config.sh
+python3 -m venv /tmp/app-poly-networking-tests
+/tmp/app-poly-networking-tests/bin/python -m pip install 'PyYAML==6.0.2'
+/tmp/app-poly-networking-tests/bin/python tests/test_dev_networking.py
+npm ci --ignore-scripts
+node tests/test_release_notes.mjs
+~~~
 
-| Компонент | Описание |
-|-----------|----------|
-| Open WebUI | UI для LLM моделей |
-| AutoK8sPilot | Read-only CrewAI наблюдатель за Kubernetes |
+Parse and evaluate the Rego policy:
 
-`clusters/dev` — основной entrypoint приложения. Он включает FastAPI, CrewAI,
-Loki, Grafana и Vector. Приложения используют Vector как единственную
-OTLP-точку: логи маршрутизируются в Loki, а трейсы доступны в структурированном
-output Vector для точечной отладки. Отдельный Jaeger в dev не разворачивается.
-Секреты приложения подаются средой деплоя, а локальный dev-runtime использует
-SQLite и ephemeral Loki storage: root не применяет CR до установки их операторов
-и не поднимает неиспользуемые платные компоненты. Дополнительные platform-модули
-остаются доступными в `platform/`, но подключаются отдельным профилем. `clusters/smoke`
-остаётся сокращённым CI-профилем и не заменяет dev.
+~~~bash
+opa check policies
+opa eval -f pretty -d policies -i /tmp/app-poly-dev.yaml 'data.kubernetes.deny[msg]'
+~~~
 
-## Добавление нового приложения
+These checks do not provision infrastructure or mutate Kubernetes.
 
-1. Создай директорию в `tenants/<team>/apps/<app>/base/`
-2. Добавь `application.yaml` с ArgoCD Application
-3. Добавь `kustomization.yaml`
-4. Включи в `clusters/<env>/kustomization.yaml`:
-   ```yaml
-   resources:
-     - ../../tenants/<team>/apps/<app>/base
-   ```
+## Repository structure
 
-## Автообновление образов
+- `clusters/` — environment entrypoints
+- `platform/core/` — namespaces, RBAC, and root applications
+- `platform/infrastructure/` — optional networking, security, storage, database, and AI components
+- `platform/observability/` — Loki, Grafana, Vector, and smoke Jaeger definitions
+- `platform/gitops/` — image updater and ApplicationSet definitions
+- `tenants/` — FastAPI and CrewAI applications plus team scaffolding
+- `policies/` — OPA validation policy
+- `tests/` — rendered-contract and release checks
 
-Для автоматического обновления версий используется argocd-image-updater:
+## Documentation
 
-```yaml
-annotations:
-  argocd-image-updater.argoproj.io/image-list: app=ghcr.io/org/app:^1
-  argocd-image-updater.argoproj.io/app.update-strategy: semver
-  argocd-image-updater.argoproj.io/write-back-method: git
-```
+- [Architecture](docs/architecture.md)
+- [Golden install](docs/golden-install.md)
+- [Dev web entrypoints](docs/DEV-WEBS.md)
 
-## CI/CD
+## Related repositories
 
-GitHub Actions валидирует манифесты на каждый PR:
+- [app-poly-gitops-infra](https://github.com/justgithubaccount/app-poly-gitops-infra) — Timeweb provisioning and Argo CD bootstrap
+- [app-poly-gitops-helm](https://github.com/justgithubaccount/app-poly-gitops-helm) — FastAPI chart
+- [app-poly-gitops-fastapi](https://github.com/justgithubaccount/app-poly-gitops-fastapi) — chat backend
+- [app-poly-gitops-crewai](https://github.com/justgithubaccount/app-poly-gitops-crewai) — Kubernetes automation service
+- [app-poly-gitops-ui](https://github.com/justgithubaccount/app-poly-gitops-ui) — standalone frontend; not deployed by the current roots
+- [app-mono-gitops](https://github.com/justgithubaccount/app-mono-gitops) — archived predecessor
 
-1. **Kustomize build** — рендеринг манифестов
-2. **Kubeconform** — валидация против JSON схем
-3. **OPA** — проверка политик безопасности
-
-### Политики (policies/)
-
-- Контейнеры должны иметь limits (cpu, memory)
-- Обязательные probes (liveness, readiness)
-- Запуск не от root (`runAsNonRoot: true`)
-- Наличие namespace
-- OTEL endpoint для телеметрии
-
-## Локальная разработка
-
-```bash
-# Рендеринг манифестов
-kubectl kustomize clusters/dev/
-
-# Валидация
-kubeconform -summary -strict <(kubectl kustomize clusters/dev/)
-
-# Проверка политик
-opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]"
-```
-
-## Требования
-
-- Kubernetes кластер (Timeweb Cloud или другой)
-- ArgoCD установлен в namespace `argocd`
-- Доступ к GitHub репозиториям
-
-## Документация
-
-- [Dev web entrypoints](docs/DEV-WEBS.md) — Argo CD, Grafana и FastAPI: DNS, TLS и свежие секреты
-- [Architecture](docs/architecture.md) — архитектура платформы и компонентов
-- [Golden Install](docs/golden-install.md) — чистая установка с нуля
-
-## Связанные репозитории
-
-| Репозиторий | Назначение |
-|-------------|------------|
-| [app-poly-gitops-infra](https://github.com/justgithubaccount/app-poly-gitops-infra) | Terraform + ArgoCD bootstrap |
-| [app-poly-gitops-helm](https://github.com/justgithubaccount/app-poly-gitops-helm) | Helm charts |
-| [app-poly-gitops-fastapi](https://github.com/justgithubaccount/app-poly-gitops-fastapi) | FastAPI приложение (chat-api) |
-
-## Лицензия
+## License
 
 MIT

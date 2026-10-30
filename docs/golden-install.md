@@ -1,164 +1,126 @@
-# Golden Install Guide
+# Golden install
 
-Руководство по чистой установке платформы с нуля.
+This guide describes a clean installation of the current `dev` or `smoke`
+desired state. It does not assert that a cluster is running, and none of the
+commands in this document are part of repository validation.
 
-Для текущего `clusters/dev` используйте [Dev web entrypoints](DEV-WEBS.md):
-там описаны три основных адреса и свежие Cloudflare/basic-auth секреты.
-Старые SealedSecrets и reflector из общего руководства для dev не нужны.
+## Choose the profile
 
-## Prerequisites
+- Use `clusters/smoke` for a disposable FastAPI, CrewAI, and Jaeger acceptance
+  run.
+- Use `clusters/dev` for the complete application profile with public
+  entrypoints, Loki, Grafana, and Vector.
+- Do not use `tst`, `stg`, or `prd` as installation targets; their
+  environment contracts are incomplete.
 
-- Timeweb Cloud account с API токеном
-- Cloudflare account с API токеном для DNS
-- GitHub account с PAT для ArgoCD Image Updater
+## Provision and bootstrap
 
-## Step 1: Infrastructure (app-poly-gitops-infra)
+[`app-poly-gitops-infra`](https://github.com/justgithubaccount/app-poly-gitops-infra)
+owns Terraform and Argo CD bootstrap.
 
-```bash
-# Clone repo
-git clone https://github.com/justgithubaccount/app-poly-gitops-infra
-cd app-poly-gitops-infra
+The recommended disposable path is its **Timeweb smoke and debug** workflow. It
+creates one cost-bounded cluster, reconciles `clusters/smoke`, runs application
+checks, and destroys the cluster by default. Selecting `keep_cluster=true`
+retains encrypted Terraform state and kubeconfig for one day; cleanup then
+requires the **Timeweb cleanup** workflow with the provisioning run ID.
 
-# Configure environment
+The **Timeweb retained dev deploy** workflow can resize a retained smoke cluster
+and switch its root to `clusters/dev`. It does not destroy the cluster. This is
+an explicit deployment operation and needs the additional dev Secrets below.
+
+For a manual local bootstrap, use the infra repository:
+
+~~~bash
 cp .env.example .env
-# Edit .env:
-# - TF_VAR_timeweb_token
-# - AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (S3 backend)
-# - CLOUDFLARE_TOKEN
-# - GITHUB_PAT / GITHUB_USERNAME
-
-# Full setup
+task plan
 task up
-```
+~~~
 
-## Step 2: Create Secrets
+`task up` applies Terraform, installs Argo CD, and applies the root application.
+Review the Terraform plan and account cost before running it. The default local
+state is intended for a single disposable workflow; configure the documented S3
+backend example for a persistent environment.
 
-После установки sealed-secrets контроллера:
+## Runtime secrets
 
-```bash
-# OpenRouter API key
-task seal:openrouter
+Repository or Actions secrets do not automatically become Kubernetes Secrets.
+Create fresh values for every new cluster and never reuse SealedSecrets encrypted
+for a deleted controller.
 
-# GitHub credentials for Image Updater
-task seal:github
+The smoke workflow creates the FastAPI and CrewAI LLM Secrets from its
+`OPENAI_API_KEY` repository secret. A manual install needs:
 
-# Cloudflare token (creates in external-dns namespace, reflector copies to cert-manager)
-task seal:cloudflare
-```
+- `chat-api/chat-openrouter` with key `OPENROUTER_API_KEY`;
+- `crewai-system/crewai-llm` with key `openai-api-key`.
 
-## Step 3: Verify Installation
+The dev public entrypoints additionally require:
 
-```bash
-# Check ArgoCD status
-task status
+- `external-dns/cloudflare-token` with key `CF_API_TOKEN`;
+- `cert-manager/cloudflare-token` with key `CF_API_TOKEN`;
+- `chat-api/chat-api-basic-auth` with key `auth`;
+- `observability/grafana-admin` with keys `admin-user` and
+  `admin-password`.
 
-# Get ArgoCD password
-task argocd-password
+[DEV-WEBS.md](DEV-WEBS.md) contains safe creation commands and Cloudflare scope
+requirements.
 
-# Access UI
-open https://argo.syncjob.ru
-```
+## Reconcile the root
 
-## Known Issues & Fixes
+Argo CD must point to one versioned or reviewed repository revision:
 
-### 1. ArgoCD 502 Bad Gateway
+~~~yaml
+spec:
+  source:
+    repoURL: https://github.com/justgithubaccount/app-poly-gitops-k8s.git
+    targetRevision: <reviewed-tag-or-commit>
+    path: clusters/dev
+~~~
 
-**Причина**: Ingress с `backend-protocol: HTTPS`, но ArgoCD в insecure mode.
+The infrastructure smoke workflow uses `bootstrap/argocd/gitops-smoke-root.yaml`
+and the smoke path. Do not treat `main` as an immutable release.
 
-**Решение**: В `ingress-argo.yaml` НЕ использовать аннотацию:
-```yaml
-# nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # WRONG
-```
+## Verify
 
-### 2. cert-manager не видит Cloudflare token
+After an explicitly authorized deployment:
 
-**Причина**: Секрет не реплицирован в namespace cert-manager.
+~~~bash
+kubectl -n argocd get applications
+kubectl get pods --all-namespaces
+kubectl -n chat-api get deployment,service
+kubectl -n crewai-system get deployment,service
+~~~
 
-**Решение**: Добавить reflector аннотации к секрету в external-dns:
-```yaml
-annotations:
-  reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-  reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "cert-manager"
-  reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-  reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "cert-manager"
-```
+For dev networking:
 
-### 3. Cloudflare token key mismatch
+~~~bash
+kubectl -n ingress-nginx get service ingress-nginx-controller
+kubectl -n external-dns logs deployment/external-dns --tail=50
+kubectl get clusterissuer letsencrypt-dns
+kubectl get ingress,certificate --all-namespaces
+~~~
 
-**Причина**: cert-manager ожидает ключ `CF_API_TOKEN`, а в секрете другое имя.
+A rendered manifest is not evidence that DNS, TLS, provider access, or telemetry
+is live. Verify the public endpoints and trace/log correlation separately.
 
-**Решение**: Убедиться что секрет содержит ключ `CF_API_TOKEN`:
-```yaml
-stringData:
-  CF_API_TOKEN: "your-token-here"
-```
+## Operational notes
 
-### 4. CRD not found errors
-
-**Причина**: CR деплоится раньше оператора (CRD).
-
-**Решение**: Использовать sync-waves:
-```yaml
-# Operator (wave 1)
-annotations:
-  argocd.argoproj.io/sync-wave: "1"
-
-# CR (wave 3+)
-annotations:
-  argocd.argoproj.io/sync-wave: "3"
-  argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
-```
-
-### 5. PostgreSQL connection refused
-
-**Причина**: chat-api стартует раньше чем PostgreSQL готов.
-
-**Решение**: Для dev окружений использовать CloudNativePG вместо Crunchy PGO:
-```yaml
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: chat-db-cnpg
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-```
-
-Секрет для приложения: `chat-db-cnpg-app` с ключом `uri`.
-
-### 6. OutOfSync warnings
-
-**Нормальны для**:
-- Shared resources (Ingress используемый несколькими apps)
-- CRD drift (longhorn, sealed-secrets operators обновляют свои CRD)
-
-Можно игнорировать если приложение работает корректно.
-
-## Sync Wave Reference
-
-| Wave | Purpose | Examples |
-|------|---------|----------|
-| 0 | Core resources | Namespaces |
-| 1 | CRD Operators | cert-manager, sealed-secrets, cloudnative-pg, longhorn |
-| 2 | Cluster-wide configs | ClusterIssuers, StorageClasses |
-| 3 | Namespace resources | Secrets, ConfigMaps, Ingresses, DB Clusters |
-| 5 | Applications | chat-api |
-
-## Verification Checklist
-
-- [ ] ArgoCD UI accessible at https://argo.syncjob.ru
-- [ ] All ArgoCD applications Synced (некоторые OutOfSync warnings OK)
-- [ ] cert-manager выдаёт сертификаты (check Certificate resources)
-- [ ] external-dns создаёт DNS записи в Cloudflare
-- [ ] longhorn storage class available (`kubectl get sc`)
-- [ ] PostgreSQL cluster ready (`kubectl get cluster -n chat-api`)
-- [ ] chat-api responds (`curl https://chat-dev.syncjob.ru/health`)
-- [ ] Logs visible in Grafana/Loki
+- Argo CD runs in insecure HTTP mode behind the Ingress. Its backend service port
+  is 80; do not set the NGINX backend protocol to HTTPS.
+- Cloudflare should use **Full (strict)** after origin certificates are Ready.
+  Do not weaken TLS validation to bypass a 526 response.
+- External DNS is `upsert-only` and owns only annotated `syncjob.ru` records
+  with its configured TXT owner ID.
+- The pinned ingress-nginx controller is retired upstream. It is retained for the
+  lab profile; migrate before treating this as a long-lived public platform.
 
 ## Cleanup
 
-```bash
-cd app-poly-gitops-infra
-task destroy
-```
+Use the same state that created the cluster:
 
-Это удалит Kubernetes кластер и все ресурсы в Timeweb Cloud.
+~~~bash
+task destroy
+~~~
+
+For a retained Actions run, use the **Timeweb cleanup** workflow and its exact
+provisioning run ID. Confirm an empty Terraform state after destroy. Deleting Git
+branches or Argo CD applications is not a substitute for cloud cleanup.

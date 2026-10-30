@@ -1,47 +1,51 @@
-# Public dev web entrypoints
+# Development web entrypoints
 
-`clusters/dev` enables these existing services, and no OpenWebUI or CrewAI ingress:
+`clusters/dev` declares the following public entrypoints. They exist only after
+the profile is deployed and DNS/TLS reconciliation succeeds; this repository
+does not claim that they are currently live.
 
-| Address | Service | Login |
+| Address | Service | Access boundary |
 | --- | --- | --- |
 | `https://argo.syncjob.ru` | Argo CD | Argo CD account |
-| `https://grafana.syncjob.ru` | Grafana | Stable `grafana-admin` Secret |
-| `https://chat-dev.syncjob.ru/docs` | FastAPI API documentation | HTTP basic auth |
+| `https://grafana.syncjob.ru` | Grafana | `grafana-admin` Secret |
+| `https://chat-dev.syncjob.ru/docs` | FastAPI documentation | HTTP basic auth |
 
-This is not the separate `app-poly-gitops-ui` frontend. That frontend is not
-deployed by this configuration. FastAPI has no application-level user isolation;
-the dev basic-auth boundary prevents exposing its paid LLM endpoint anonymously.
+The standalone
+[`app-poly-gitops-ui`](https://github.com/justgithubaccount/app-poly-gitops-ui)
+is not deployed by this profile. FastAPI has no application-level user
+isolation, so the basic-auth Ingress must not be removed from a public dev
+deployment.
 
-## What reconciles automatically
+## Reconciliation model
 
-`ingress-nginx` creates one LoadBalancer service. Its external IP becomes the
-target of the three Ingresses. `external-dns` watches only explicitly opted-in
-Ingresses in `syncjob.ru` and upserts Cloudflare records with TXT ownership
-`app-poly-gitops-dev`. It does not delete unrelated records, such as
-`self.syncjob.ru`, or reconcile them from this repository.
+ingress-nginx creates one LoadBalancer Service. external-dns watches only
+Ingresses explicitly opted in by annotation, filters to `syncjob.ru`, and uses
+upsert-only policy with TXT owner `app-poly-gitops-dev`. It does not manage
+unrelated records such as `self.syncjob.ru`.
 
-`cert-manager` installs its CRDs and webhook before the `letsencrypt-dns`
-ClusterIssuer (child-application sync wave 10). Ingress-shim issues separate
-certificates in `argocd`, `observability` and `chat-api`; no wildcard secret
-replication or reflector is required. Ingress traffic to Argo CD is HTTP on
-service port 80, matching bootstrap `server.insecure=true`.
+cert-manager installs its CRDs and webhook before the `letsencrypt-dns`
+ClusterIssuer. Ingress-shim then issues separate certificates in `argocd`,
+`observability`, and `chat-api`. Argo CD runs in insecure HTTP mode behind
+the Ingress, so its backend service port is 80.
 
-The pinned legacy ingress-nginx controller is retired upstream. This restores the
-existing dev stack only; migrate to a maintained controller before treating it as
-a permanent public deployment. See the [upstream retirement announcement](https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/).
+The pinned ingress-nginx controller is retired upstream. It is retained to
+reproduce the current lab profile, not as a recommendation for a new permanent
+deployment. See the
+[upstream announcement](https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/).
 
-## Required fresh secrets
+## Required Secrets
 
-DNS/TLS is automatic only after a running cluster has its credentials. Old
-SealedSecrets from the deleted cluster are deliberately excluded. Neither a GitHub
-Actions secret nor a local environment variable is automatically a Kubernetes
-Secret. This change does not provision a cluster or write Cloudflare records.
+Create fresh Secrets for a new cluster. A GitHub Actions secret or local
+environment variable is not automatically available to Kubernetes, and a
+SealedSecret from a deleted controller cannot be decrypted by a new controller.
 
-Create `cloudflare-token` with key `CF_API_TOKEN` in **both** `external-dns` and
-`cert-manager`. Scope the Cloudflare API token to zone `syncjob.ru`, permissions
-**Zone:DNS:Edit** and **Zone:Zone:Read**. Run with the intended kubeconfig selected:
+### Cloudflare DNS
 
-```bash
+Create `cloudflare-token` with key `CF_API_TOKEN` in both namespaces. Scope
+the token to zone `syncjob.ru` with **Zone:DNS:Edit** and
+**Zone:Zone:Read**.
+
+~~~bash
 read -rsp 'Cloudflare API token: ' CLOUDFLARE_TOKEN
 printf '\n'
 for namespace in external-dns cert-manager; do
@@ -51,75 +55,70 @@ for namespace in external-dns cert-manager; do
       --from-env-file=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -
 done
 unset CLOUDFLARE_TOKEN
-```
+~~~
 
-Create the FastAPI ingress password using `htpasswd` (it prompts for the password):
+### FastAPI basic authentication
 
-```bash
+`htpasswd` prompts for the password and writes only the hash into the Secret:
+
+~~~bash
 kubectl create namespace chat-api --dry-run=client -o yaml | kubectl apply -f -
 htpasswd -nB operator |
   kubectl -n chat-api create secret generic chat-api-basic-auth \
     --from-file=auth=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -
-```
+~~~
 
-Without that secret, external FastAPI access fails closed. In-cluster calls and
-port-forward-based smoke checks do not pass through this ingress auth boundary.
-If ingress-nginx does not pick up a newly created auth secret immediately, inspect
-the controller events and verify the Secret's `auth` key contains a valid htpasswd
-entry. Do not disable authentication to make a smoke test pass.
+Without this Secret, external FastAPI access fails closed. In-cluster and
+port-forward checks do not pass through this boundary.
 
-Create the Grafana credential Secret **once**, before deploying Grafana. The
-password is generated locally, piped directly into the Secret and never stored in
-git. This command intentionally fails rather than replacing an existing Secret:
+### Grafana administrator
 
-```bash
+Create the credential once, before Grafana starts. This command intentionally
+fails instead of replacing an existing Secret:
+
+~~~bash
 kubectl create namespace observability --dry-run=client -o yaml | kubectl apply -f -
 openssl rand -base64 36 | tr -d '\n' |
   kubectl -n observability create secret generic grafana-admin \
     --from-literal=admin-user=admin --from-file=admin-password=/dev/stdin
-```
+~~~
 
-Helm references this existing Secret, avoiding random password generation and
-Deployment checksum changes on every Argo CD refresh. Retrieve the password
-privately when needed:
+Retrieve the generated password privately when needed:
 
-```bash
-kubectl -n observability get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d
-```
+~~~bash
+kubectl -n observability get secret grafana-admin \
+  -o jsonpath='{.data.admin-password}' | base64 -d
+~~~
 
-For an existing Grafana instance, rotate any old default credentials explicitly;
-changing Helm values is not proof that the stored Grafana password changed.
-Keep Cloudflare SSL/TLS mode **Full (strict)** once origin certificates are Ready.
-An origin certificate that is not ready may cause Cloudflare 526; never work around
-it by weakening TLS verification.
+Changing Helm values is not proof that an existing Grafana password rotated.
 
-## Verify after an explicitly authorized deploy
+## Verification
 
-```bash
+After an explicitly authorized deployment:
+
+~~~bash
 kubectl -n ingress-nginx get service ingress-nginx-controller
 kubectl -n external-dns logs deployment/external-dns --tail=50
 kubectl get clusterissuer letsencrypt-dns
-kubectl get ingress,certificate -A
+kubectl get ingress,certificate --all-namespaces
 curl -I https://argo.syncjob.ru
 curl -I https://grafana.syncjob.ru
 curl -u operator https://chat-dev.syncjob.ru/health
-```
+~~~
 
-Check that a deleted managed DNS record is recreated and `self.syncjob.ru` remains
-unchanged. Do not infer working DNS/TLS from a successful manifest render. A public
-LoadBalancer/IP may add provider charges; provisioning needs its own cost review.
-No merge, release or deploy is part of preparing this configuration.
+Keep Cloudflare SSL/TLS mode at **Full (strict)** after origin certificates are
+Ready. Investigate a 526 response instead of weakening verification. Confirm
+that deleted records owned by this profile are recreated and unrelated records
+remain unchanged.
 
-## Local validation
+## Offline validation
 
-Requires `kubectl`, Helm 3, Python 3 and PyYAML. CI installs PyYAML in an isolated
-virtual environment.
-
-```bash
-python3 tests/test_dev_networking.py
+~~~bash
+python3 -m venv /tmp/app-poly-networking-tests
+/tmp/app-poly-networking-tests/bin/python -m pip install 'PyYAML==6.0.2'
+/tmp/app-poly-networking-tests/bin/python tests/test_dev_networking.py
 bash tests/test_dev_contract.sh
-```
+~~~
 
-The networking tests render the dev and smoke roots and the four pinned Helm
-charts, verifying routing, DNS flags, secret references, stable Grafana auth,
-CRD/issuer ordering and continued smoke isolation without touching a cluster.
+These checks render desired state only. They do not create a LoadBalancer, write
+Cloudflare records, issue certificates, or prove a live endpoint.
