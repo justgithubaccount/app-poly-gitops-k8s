@@ -60,9 +60,9 @@ bash tests/test_chat_contract.sh
 bash tests/test_crewai_contract.sh
 bash tests/test_dev_contract.sh
 bash tests/test_vector_config.sh
-python3 -m venv /tmp/app-poly-networking-tests
-/tmp/app-poly-networking-tests/bin/python -m pip install 'PyYAML==6.0.2'
-/tmp/app-poly-networking-tests/bin/python tests/test_dev_networking.py
+python3 -m venv /tmp/app-poly-manifest-validation
+/tmp/app-poly-manifest-validation/bin/python -m pip install 'PyYAML==6.0.2'
+/tmp/app-poly-manifest-validation/bin/python tests/test_dev_networking.py
 npm ci --ignore-scripts
 node tests/test_release_notes.mjs
 ~~~
@@ -71,8 +71,12 @@ Parse and evaluate the Rego policy:
 
 ~~~bash
 opa check policies
-opa eval -f pretty -d policies -i /tmp/app-poly-dev.yaml 'data.kubernetes.deny[msg]'
+/tmp/app-poly-manifest-validation/bin/python \
+  scripts/validate_opa_manifests.py /tmp/app-poly-dev.yaml policies
 ~~~
+
+The validator evaluates every Kubernetes resource in the multi-document render
+separately and exits non-zero when any document violates a policy.
 
 These checks do not provision infrastructure or mutate Kubernetes.
 

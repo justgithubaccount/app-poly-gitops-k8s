@@ -7,6 +7,7 @@ on:
       - 'clusters/**'
       - 'tenants/**'
       - 'policies/**'
+      - 'scripts/**'
       - 'tests/**'
       - 'package.json'
       - 'package-lock.json'
@@ -44,9 +45,9 @@ jobs:
 
       - name: Validate public dev networking
         run: |
-          python3 -m venv "${RUNNER_TEMP}/dev-networking-tests"
-          "${RUNNER_TEMP}/dev-networking-tests/bin/python" -m pip install 'PyYAML==6.0.2'
-          "${RUNNER_TEMP}/dev-networking-tests/bin/python" tests/test_dev_networking.py
+          python3 -m venv "${RUNNER_TEMP}/manifest-validation"
+          "${RUNNER_TEMP}/manifest-validation/bin/python" -m pip install 'PyYAML==6.0.2'
+          "${RUNNER_TEMP}/manifest-validation/bin/python" tests/test_dev_networking.py
 
       - name: Setup tools
         run: |
@@ -55,6 +56,10 @@ jobs:
 
           curl -LO https://openpolicyagent.org/downloads/latest/opa_linux_amd64
           chmod +x opa_linux_amd64 && sudo mv opa_linux_amd64 /usr/local/bin/opa
+
+      - name: Validate OPA multi-document handling
+        run: |
+          "${RUNNER_TEMP}/manifest-validation/bin/python" tests/test_opa_multidoc.py -v
 
       - name: Validate Kustomize
         run: |
@@ -74,26 +79,5 @@ jobs:
 
       - name: OPA policy check
         run: |
-          echo "🔎 Evaluating OPA policies..."
-          opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]" || {
-            echo "❌ OPA crashed (syntax or data issue)"
-            exit 2
-          }
-
-          result=$(opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]")
-          echo "$result"
-
-          if echo "$result" | grep -q "msg"; then
-            echo "❌ OPA policy violations found"
-
-            echo "⛔ Problem fragment:"
-            line=$(grep -n "$(echo "$result" | grep msg | cut -d':' -f2 | head -n1 | xargs)" rendered.yaml | cut -d':' -f1 | head -n1)
-            if [ -n "$line" ]; then
-              start=$((line-10))
-              [ "$start" -lt 1 ] && start=1
-              end=$((line+10))
-              sed -n "${start},${end}p" rendered.yaml
-            fi
-
-            exit 1
-          fi
+          "${RUNNER_TEMP}/manifest-validation/bin/python" \
+            scripts/validate_opa_manifests.py rendered.yaml policies/
