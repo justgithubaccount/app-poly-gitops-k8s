@@ -39,7 +39,6 @@ entrypoints, collision risks, and operator decisions.
 - namespace definitions;
 - ingress-nginx, cert-manager, and external-dns for the documented dev hosts;
 - Loki, Grafana, and a Vector OTLP gateway;
-- Argo CD Image Updater;
 - the FastAPI Helm release and CrewAI runtime.
 
 FastAPI uses local SQLite in this profile. Database operators and custom database
@@ -73,9 +72,11 @@ Environment overlays supply the image tag, provider URL/model, telemetry
 endpoint, resources, and existing Secret references. CrewAI is rendered from
 `tenants/product-team/apps/crewai/runtime` with environment telemetry patches.
 
-Image Updater annotations are present on the FastAPI Argo CD application, but a
-configured Git write-back credential and an active updater are required before
-automatic changes can occur.
+Supported roots use explicit, reviewed chart and image pins. They do not run an
+automatic Git writer. The reusable Image Updater manifest remains under
+`platform/gitops`, and incomplete environment scaffolds still reference it, but
+activation requires a separate ownership design that writes to the environment
+desired-state repository rather than the Helm packaging repository.
 
 ## Observability
 

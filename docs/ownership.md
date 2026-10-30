@@ -25,7 +25,7 @@ another.
 The source references below were checked against these `main` snapshots before
 this documentation-only update:
 
-- `app-poly-gitops-k8s@2033b80531de7294bb7cafe64c0488ca6b51146d`;
+- `app-poly-gitops-k8s@0925bc568e8c279eff98a8093c35ad4c0c9ebc9e`;
 - `app-poly-gitops-infra@cb7c88f84e9f796e4725fc0a218fe68e3785a72e`.
 
 The classification vocabulary is intentionally fail-closed:
@@ -42,7 +42,7 @@ The classification vocabulary is intentionally fail-closed:
 | Git path / consumer | Source ref | API object -> watcher -> payload | Sync, prune, and finalizer consequence | Classification | Recommended action |
 | --- | --- | --- | --- | --- | --- |
 | Infra `Taskfile.yaml` -> `platform/core/cluster-bootstrap/app-of-apps.yaml` | Default `v1.5.0`; Taskfile rewrites the child source to a selected release tag or full SHA | `Application/dev-cluster` -> Argo CD application-controller -> `clusters/dev` root resources and child Applications | Automated prune/self-heal; root finalizer cascades deletion to root-owned objects | `VERIFIED_GIT_CONSUMER`; runtime `UNKNOWN` | Retain and keep the version rewrite contract tested in infra |
-| Infra `bootstrap/argocd/gitops-smoke-root.yaml` | `v1.2.0` | `Application/gitops-smoke-root` -> application-controller -> `clusters/smoke` root | Automated prune/self-heal; finalizer cascades deletion | `VERIFIED_GIT_CONSUMER`; runtime `UNKNOWN` | Retain; the retained-dev workflow deliberately reuses this object |
+| Infra `bootstrap/argocd/gitops-smoke-root.yaml` | `v1.5.0` in the coordinated lifecycle proposal | `Application/gitops-smoke-root` -> application-controller -> `clusters/smoke` root | Automated prune/self-heal; finalizer cascades deletion | `VERIFIED_GIT_CONSUMER`; runtime `UNKNOWN` | Retain; the retained-dev workflow deliberately reuses this object |
 | Infra retained-dev workflow | Operator-selected release/commit | patches `Application/gitops-smoke-root` -> application-controller -> switches payload to `clusters/dev` | Same object changes payload ownership; a second root would create prune/field collisions | `VERIFIED_GIT_CONSUMER`; runtime `UNKNOWN` | Retain compatibility; do not create a second dev root |
 | `clusters/dev/bootstrap.yaml` | Floating `main` | `Application/root-app-dev` -> application-controller -> `clusters/dev` | Automated prune/self-heal and finalizer; activation beside `dev-cluster` duplicates ownership | `OPTIONAL` + `UNKNOWN_EXTERNAL` | Keep until the operator deprecates the public manual entrypoint with a prune-safe handoff |
 | `clusters/{tst,stg,prd}/bootstrap.yaml` | Floating `main` | `Application/root-app-{env}` -> application-controller -> incomplete environment roots | Automated prune/self-heal and finalizer can create or delete partial platform payloads | `SCAFFOLD` + `UNKNOWN_EXTERNAL` | Keep out of CI/deployment; do not advertise as production-ready |
@@ -64,13 +64,12 @@ object created from another account, or a fork, so their external status remains
 ### `clusters/dev`
 
 The root render owns six Namespace objects, three public Ingress objects, and
-nine child Application objects. The child Applications own these payloads:
+eight child Application objects. The child Applications own these payloads:
 
 | Child Application | Payload owner |
 | --- | --- |
 | `ingress-nginx`, `cert-manager`, `external-dns` | Pinned upstream Helm charts and dev values |
 | `loki`, `grafana`, `vector-gateway` | Pinned observability charts and values |
-| `argocd-image-updater` | Pinned Argo Helm chart |
 | `chat-api` | `app-poly-gitops-helm@v0.4.1` with dev overrides |
 | `crewai` | This repository at `v1.4.2`, dev runtime overlay |
 
@@ -95,7 +94,7 @@ DNS controller, Loki, Grafana, Vector, or ApplicationSet.
 | Sealed Secrets, Reflector, External Secrets, and Longhorn bases | `tst/stg/prd` scaffolds and dormant infrastructure ApplicationSet -> child Applications -> application-controller -> operators/CRDs and dependents | `SCAFFOLD` + `OPTIONAL` + `UNKNOWN_EXTERNAL` | Pruning an operator before its custom resources are migrated can orphan or delete dependent state |
 | CNPG and PGO operator bases | no dev/smoke or ApplicationSet reference -> child Application if manually applied -> application-controller -> operator CRDs/controllers | `OPTIONAL` + `UNKNOWN_EXTERNAL` | No static consumer is insufficient for deletion; live CR/controller inventory is required |
 | `cnpg-cluster.yaml`, `postgres-cluster.yaml`, and dev SealedSecret files | no supported-root inclusion -> custom resources/SealedSecrets if manually applied -> respective operators/controllers -> databases/Secrets | `OPTIONAL` + `UNKNOWN_EXTERNAL` | Applying both database CRs creates competing database choices; deletion may remove data or credentials |
-| Image Updater | `clusters/dev` -> `Application/argocd-image-updater` -> application-controller -> image-updater controller -> annotated FastAPI Application/Git write-back | `VERIFIED_GIT_CONSUMER`; live credentials and writes `UNKNOWN` | Removing the Application with prune removes the controller; it does not prove prior Git write-back state |
+| Image Updater | Reusable manifest and `tst/stg/prd` scaffolds -> `Application/argocd-image-updater` -> application-controller -> updater controller | `DEPRECATED_CANDIDATE` + `SCAFFOLD` + `UNKNOWN_EXTERNAL` | Supported roots no longer activate it: the former FastAPI annotation wrote against the Helm packaging source instead of environment desired state. Retain until external use is excluded or a correct ownership migration is approved. |
 | Dify directory | documentation and empty Kustomization only; no API object or watcher | `SCAFFOLD` | The former comment-only manifest was already removed; no deployable Dify object exists |
 
 Static inspection therefore identifies no additional `SAFE_TO_DELETE` object.

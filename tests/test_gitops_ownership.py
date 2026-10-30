@@ -73,7 +73,6 @@ class GitOpsOwnershipContractTests(unittest.TestCase):
         self.assertEqual(
             dev_apps,
             {
-                "argocd-image-updater",
                 "cert-manager",
                 "chat-api",
                 "crewai",
@@ -85,6 +84,16 @@ class GitOpsOwnershipContractTests(unittest.TestCase):
             },
         )
         self.assertEqual(smoke_apps, {"chat-api", "crewai"})
+
+    def test_supported_roots_have_no_automatic_git_writer(self) -> None:
+        for environment, resources in self.roots.items():
+            with self.subTest(environment=environment):
+                for resource in resources:
+                    annotations = resource.get("metadata", {}).get("annotations", {})
+                    self.assertFalse(
+                        any(key.startswith("argocd-image-updater.argoproj.io/") for key in annotations),
+                        identity(resource),
+                    )
 
     def test_application_manifests_are_not_comment_only_placeholders(self) -> None:
         application_files = sorted(ROOT.glob("platform/**/base/application.yaml"))

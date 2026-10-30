@@ -11,8 +11,6 @@ resources:
   - ../../platform/observability/monitoring/loki
   - ../../platform/observability/monitoring/grafana
   - ../../platform/observability/opentelemetry/collector/otel-collector
-  # GitOps
-  - ../../platform/gitops/argocd-image-updater
   # Tenants
   - ../../tenants/product-team/apps/chat/overlays/dev
   - ../../tenants/product-team/apps/crewai/base

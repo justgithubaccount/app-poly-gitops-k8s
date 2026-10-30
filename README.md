@@ -10,7 +10,7 @@ Two environment roots are supported and validated in CI:
 
 | Root | Purpose | Included services |
 | --- | --- | --- |
-| `clusters/dev` | Complete application development profile | FastAPI, CrewAI, ingress-nginx, cert-manager, external-dns, Loki, Grafana, Vector, image updater |
+| `clusters/dev` | Complete application development profile | FastAPI, CrewAI, ingress-nginx, cert-manager, external-dns, Loki, Grafana, Vector |
 | `clusters/smoke` | Small disposable acceptance profile | FastAPI, CrewAI, and Jaeger |
 
 `clusters/tst`, `clusters/stg`, and `clusters/prd` are retained scaffolding.
@@ -97,7 +97,7 @@ These checks do not provision infrastructure or mutate Kubernetes.
 - `platform/core/` — namespaces, RBAC, and root applications
 - `platform/infrastructure/` — optional networking, security, storage, database, and AI components
 - `platform/observability/` — Loki, Grafana, Vector, and smoke Jaeger definitions
-- `platform/gitops/` — image updater and ApplicationSet definitions
+- `platform/gitops/` — optional image updater and ApplicationSet definitions
 - `tenants/` — FastAPI and CrewAI applications plus team scaffolding
 - `policies/` — OPA validation policy
 - `tests/` — rendered-contract and release checks

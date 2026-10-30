@@ -25,6 +25,14 @@ grep -q 'name: loki' "${rendered_dev}"
 grep -q 'name: grafana' "${rendered_dev}"
 grep -q 'name: vector-gateway' "${rendered_dev}"
 grep -Fq 'targetRevision: 0.60.0' "${rendered_dev}"
+if grep -q 'name: argocd-image-updater' "${rendered_dev}"; then
+  echo 'dev activates an automatic Git writer outside the desired-state owner' >&2
+  exit 1
+fi
+if grep -q 'argocd-image-updater.argoproj.io/' "${rendered_dev}"; then
+  echo 'dev application still requests automatic Git write-back' >&2
+  exit 1
+fi
 
 # Dev runs the released app and sends every OTLP signal to the existing Vector gateway.
 grep -q 'tag: "1.1.2"' "${rendered_dev}"
