@@ -1,3 +1,20 @@
+## [1.5.1](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.5.0...v1.5.1) (2026-10-30)
+
+### 🐛 Bug Fixes
+
+* **gitops:** keep supported roots version-pinned ([#30](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/30)) ([a710ef8](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/a710ef8fc8bf4220fece9026bc77eab18ceca910))
+* **no-release:** validate every rendered resource with OPA ([8f4f312](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/8f4f31226fd591ad027750fd65e66385db58cb55))
+
+### 📚 Documentation
+
+* **no-release:** modernize Kubernetes repository documentation ([ab2f722](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/ab2f722b57aa6eed86899889ec12157cd31bf526))
+
+### 🏗️ Chores
+
+* **no-release:** clarify GitOps ownership and validation ([2033b80](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/2033b80531de7294bb7cafe64c0488ca6b51146d))
+* **no-release:** clean configuration comments ([5bc380b](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/5bc380bceab8f8a113391d30480239dfeeb6df8d))
+* **no-release:** pin validators and clarify GitOps ownership ([#29](https://github.com/justgithubaccount/app-poly-gitops-k8s/issues/29)) ([0925bc5](https://github.com/justgithubaccount/app-poly-gitops-k8s/commit/0925bc568e8c279eff98a8093c35ad4c0c9ebc9e))
+
 ## [1.5.0](https://github.com/justgithubaccount/app-poly-gitops-k8s/compare/v1.4.3...v1.5.0) (2026-10-29)
 
 ### 🚀 Features
