@@ -9,7 +9,6 @@ metadata:
     app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "5"
-    # Image Updater annotations
     argocd-image-updater.argoproj.io/image-list: chat=ghcr.io/justgithubaccount/app-poly-gitops-fastapi:^1
     argocd-image-updater.argoproj.io/chat.update-strategy: semver
     argocd-image-updater.argoproj.io/chat.helm.image-tag: image.tag

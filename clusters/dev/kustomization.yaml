@@ -1,10 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# All app names must be unique across the ArgoCD instance
-# So let's prefix the app names with the cluster name (dev- | demo-worker1-)
-# namePrefix: dev-
 resources:
-  # Core - namespaces must be created first
+  # Namespaces must exist before child applications reconcile.
   - ../../platform/core/namespaces
   # Public dev web entrypoints, automatic Cloudflare DNS and per-namespace TLS.
   - ../../platform/infrastructure/networking/nginx/overlays/dev
@@ -21,7 +18,7 @@ resources:
   - ../../tenants/product-team/apps/crewai/base
 
 patches:
-  # Override .spec.destination.name
+  # Target every child application at the local cluster.
   - path: destination.yaml
     target:
       kind: Application

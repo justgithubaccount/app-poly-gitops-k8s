@@ -1,4 +1,51 @@
+import fs from "node:fs";
+
+import { analyzeCommits } from "@semantic-release/commit-analyzer";
 import { generateNotes } from "@semantic-release/release-notes-generator";
+
+const releaseConfig = JSON.parse(fs.readFileSync(".releaserc.json", "utf8"));
+const analyzerPlugin = releaseConfig.plugins.find(
+  (plugin) => Array.isArray(plugin) && plugin[0] === "@semantic-release/commit-analyzer",
+);
+
+if (!analyzerPlugin) {
+  throw new Error("semantic-release commit analyzer configuration is missing");
+}
+
+const analyzerConfig = analyzerPlugin[1];
+const logger = { log() {} };
+
+const suppressedRelease = await analyzeCommits(
+  analyzerConfig,
+  {
+    commits: [
+      { message: "chore(no-release): clean configuration comments" },
+      { message: "test(no-release): guard release suppression" },
+      { message: "docs(no-release): modernize documentation" },
+    ],
+    logger,
+  },
+);
+
+if (suppressedRelease !== null) {
+  throw new Error(
+    `no-release scope must suppress a release, received: ${suppressedRelease}`,
+  );
+}
+
+const ordinaryChoreRelease = await analyzeCommits(
+  analyzerConfig,
+  {
+    commits: [{ message: "chore: ordinary maintenance" }],
+    logger,
+  },
+);
+
+if (ordinaryChoreRelease !== "patch") {
+  throw new Error(
+    `ordinary chore must remain a patch release, received: ${ordinaryChoreRelease}`,
+  );
+}
 
 const notes = await generateNotes(
   {

@@ -1,4 +1,3 @@
-# infra/base/addons/argocd-image-updater/application.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,38 +14,30 @@ spec:
     helm:
       values: |
         config:
-          # ArgoCD server configuration
           argocd:
             serverAddress: "argocd-server.argocd.svc.cluster.local:80"
             insecure: true
             plaintext: true
-            # Если нужен token вместо in-cluster auth:
-            # token: ""
-          
-          # Поддержка registries
+
           registries:
             - name: ghcr
               api_url: https://ghcr.io
               prefix: ghcr.io
-              # credentials: secret:argocd/ghcr-credentials#token
-              
-        # Метрики и мониторинг
+
         metrics:
           enabled: true
           port: 8080
-          
-        # RBAC
+
         serviceAccount:
           create: true
-        
-        # Ресурсы
+
         resources:
           limits:
             cpu: 100m
             memory: 128Mi
           requests:
             cpu: 50m
-            memory: 64Mi           
+            memory: 64Mi
   destination:
     name: CLUSTER
     namespace: argocd
