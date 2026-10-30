@@ -9,18 +9,26 @@ bootstrap are owned by
 
 ~~~mermaid
 flowchart LR
-    Infra[Terraform and Argo CD bootstrap] --> Argo[Argo CD]
-    GitOps[clusters/dev or clusters/smoke] --> Argo
-    Helm[FastAPI Helm chart] --> Argo
-    Argo --> Cluster[Kubernetes resources]
-    FastAPI[FastAPI image] --> Cluster
-    CrewAI[CrewAI image] --> Cluster
+    Infra[Terraform and Argo CD bootstrap] --> Root[One root Application]
+    Root --> GitOps[clusters/dev or clusters/smoke]
+    GitOps --> Child[Child Applications and raw root resources]
+    Helm[FastAPI Helm chart] --> Child
+    Child --> API[Kubernetes API]
+    API --> Controllers[Controllers]
+    Controllers --> Workloads[Workloads]
 ~~~
 
 An environment root renders Argo CD `Application` objects. Each child
 application then pulls a pinned chart or a versioned path and reconciles it into
 the in-cluster destination. Sync waves order Argo CD child applications; they do
 not replace readiness checks inside a child chart.
+
+The verified bootstrap consumers are in `app-poly-gitops-infra`: its Taskfile
+creates `Application/dev-cluster` from the versioned `app-of-apps.yaml`, while
+the cloud smoke workflow creates `Application/gitops-smoke-root`. Retained dev
+reuses and repoints that same smoke root rather than creating a competing root.
+See [ownership.md](ownership.md) for the complete consumer table, dormant manual
+entrypoints, collision risks, and operator decisions.
 
 ## Supported environment roots
 
@@ -50,6 +58,12 @@ It has no public ingress, DNS automation, Grafana, Loki, or Vector.
 Kustomize matrix. Their tenant secrets, destination setup, and operational
 procedures are incomplete. Treat them as scaffolding, not deployable environment
 contracts.
+
+The ApplicationSets are also outside the supported roots. Several generate the
+same child Application names as dev, while the tenant ApplicationSet can create
+different Application names that manage the same FastAPI payload. They are
+migration scaffolds, not an additional controller plane that can safely run in
+parallel.
 
 ## Application delivery
 

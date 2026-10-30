@@ -1,126 +1,61 @@
 # CLAUDE.md
 
-## Обзор проекта
+## Назначение
 
-GitOps-репозиторий для управления Kubernetes через ArgoCD. Использует App-of-Apps паттерн с Kustomize для управления несколькими окружениями.
+Репозиторий хранит декларативное Kubernetes/Argo CD desired state для
+`app-poly-gitops`. Наличие манифеста не доказывает, что ресурс развёрнут или
+работает в живом кластере.
 
-**Домен:** syncjob.ru
+Текущие CI-supported roots:
 
-## Структура
+- `clusters/dev` — FastAPI, CrewAI, networking, Loki, Grafana, Vector и Image
+  Updater;
+- `clusters/smoke` — FastAPI, CrewAI и локальный Jaeger;
+- `clusters/tst`, `clusters/stg`, `clusters/prd` — неполные scaffolds.
 
-```
-clusters/       # Точки входа для каждого окружения (dev, prd)
-platform/       # Платформенные компоненты
-  core/           # namespaces, cluster-bootstrap
-  infrastructure/ # security, networking, storage, database, ai-platform
-  observability/  # monitoring (loki, grafana), opentelemetry
-  gitops/         # argocd-image-updater
-tenants/        # Приложения команд (product-team/apps/chat)
-policies/       # OPA Rego политики для валидации
-```
+Полная карта bootstrap, root Applications, ApplicationSets, child ownership и
+prune-рисков: [`docs/ownership.md`](../docs/ownership.md). Не активируй
+ApplicationSets или альтернативный `root-app.yaml` параллельно с environment
+root без отдельной миграции ownership.
 
-## Ключевые файлы
+Компоненты под `platform/infrastructure/` могут быть optional/scaffold даже если
+их манифесты существуют. Не называй их deployed без runtime evidence. UI остаётся
+standalone и текущими roots не разворачивается.
 
-- `clusters/<env>/kustomization.yaml` — главный файл окружения, собирает все ресурсы
-- `clusters/<env>/destination.yaml` — патч для подстановки имени кластера
-- `platform/core/cluster-bootstrap/app-of-apps.yaml` — root ArgoCD Application
-- `platform/gitops/appsets/` — ApplicationSets для генерации Applications
-
-## Паттерны
-
-### ArgoCD Application
-Каждый компонент — это ArgoCD Application в `base/application.yaml`:
-- Helm charts указываются через `spec.source.repoURL` + `chart`
-- Kustomize через `spec.source.path`
-- `destination.name: CLUSTER` — placeholder, заменяется патчем
-
-### Sync Waves
-`argocd.argoproj.io/sync-wave: "N"` — порядок деплоя (меньше = раньше)
-
-### Image Updater
-Аннотации для автообновления образов:
-```yaml
-argocd-image-updater.argoproj.io/image-list: alias=registry/image:^1
-argocd-image-updater.argoproj.io/alias.update-strategy: semver
-argocd-image-updater.argoproj.io/write-back-method: git
-```
-
-## Команды
+## Offline-проверка
 
 ```bash
-# Рендер манифестов
-kubectl kustomize clusters/dev/
+kubectl kustomize clusters/dev > /tmp/app-poly-dev.yaml
+kubectl kustomize clusters/smoke > /tmp/app-poly-smoke.yaml
 
-# Валидация
-kubeconform -summary -strict rendered.yaml
+bash tests/test_chat_contract.sh
+bash tests/test_crewai_contract.sh
+bash tests/test_dev_contract.sh
+bash tests/test_vector_config.sh
 
-# Проверка политик
-opa eval -f pretty -d policies/ -i rendered.yaml "data.kubernetes.deny[msg]"
+python3 -m venv /tmp/app-poly-manifest-validation
+/tmp/app-poly-manifest-validation/bin/python -m pip install 'PyYAML==6.0.2'
+/tmp/app-poly-manifest-validation/bin/python tests/test_dev_networking.py
+/tmp/app-poly-manifest-validation/bin/python tests/test_gitops_ownership.py
+/tmp/app-poly-manifest-validation/bin/python tests/test_opa_multidoc.py -v
+
+opa check policies
+/tmp/app-poly-manifest-validation/bin/python \
+  scripts/validate_opa_manifests.py /tmp/app-poly-dev.yaml policies
+kubeconform -summary -strict \
+  -skip Application,ApplicationSet,Certificate,ClusterIssuer,SealedSecret,PostgresCluster,Cluster \
+  /tmp/app-poly-dev.yaml
 ```
 
-## Добавление компонента
+OPA должен получать каждый документ через `scripts/validate_opa_manifests.py`;
+передавать multi-document render напрямую как один `opa eval -i` нельзя.
 
-1. Создай `platform/infrastructure/<category>/<name>/base/`
-2. Добавь `application.yaml` и `kustomization.yaml`
-3. Включи в `clusters/<env>/kustomization.yaml`
+## Границы изменений
 
-## Добавление tenant приложения
-
-1. Создай `tenants/<team>/apps/<app>/base/`
-2. Добавь Application с нужными аннотациями
-3. Включи в `clusters/<env>/kustomization.yaml`
-
-## Развёрнутые компоненты
-
-**Networking:**
-- ingress-nginx — LoadBalancer ingress controller
-- cert-manager — Let's Encrypt сертификаты через DNS challenge (letsencrypt-dns ClusterIssuer)
-- external-dns — автоматическое управление DNS записями в Cloudflare
-
-**Security:**
-- sealed-secrets — шифрование секретов (kubeseal)
-- reflector — репликация секретов между namespaces
-- external-secrets — получение секретов из внешних хранилищ
-
-**Storage:**
-- longhorn — distributed block storage
-
-**Database:**
-- pgo-operator — Crunchy PostgreSQL Operator (Patroni-based, enterprise-grade)
-- cloudnative-pg — CloudNativePG Operator (simple, lightweight, рекомендуется для dev)
-
-**Observability:**
-- loki — логирование
-- grafana — дашборды
-- vector-gateway — сбор логов
-- otel-collector — OpenTelemetry collector (OTLP → Loki)
-
-**AI Platform:**
-- open-webui — веб-интерфейс для LLM
-
-## SealedSecrets
-
-Секреты шифруются в `app-poly-gitops-infra` репе через `task seal:*` команды.
-Reflector аннотации используются для репликации между namespaces (например cloudflare-token из external-dns в cert-manager).
-
-## Важно
-
-- Все Applications деплоятся в namespace `argocd`
-- Секреты шифруются через sealed-secrets с reflector для репликации
-- Политики в `policies/kubernetes.rego` проверяются в CI
-- sync-wave аннотации критичны для правильного порядка деплоя CRD-зависимых ресурсов
-
-## Golden Install — важные настройки
-
-1. **ArgoCD Ingress** (ingress-argo.yaml) — НЕ использовать `backend-protocol: HTTPS` (ArgoCD в insecure mode).
-
-2. **CloudNativePG Cluster** — создаёт секрет `<cluster-name>-app` с ключом `uri` для DATABASE_URL.
-
-3. **OutOfSync warnings** — нормальны для:
-   - Shared resources (например Ingress используемый несколькими apps)
-   - CRD drift (longhorn, sealed-secrets operators)
-
-4. **OpenTelemetry pipeline**: chat-api SDK → OTel Collector (OTLP) → Loki → Grafana
-   - Логи содержат trace_id, span_id, k8s metadata
-
-5. **Cloudflare token** — ключ в секрете: `CF_API_TOKEN`. Reflector реплицирует из external-dns в cert-manager namespace.
+- Сначала установи точного Git/Argo владельца объекта и downstream payload.
+- Не удаляй Namespace, Secret, CR или optional operator только из-за отсутствия
+  в dev/smoke.
+- Не меняй chart/image/source revision без отдельного release/deployment решения.
+- Render и CI доказывают только корректность desired state, не convergence.
+- Никаких `kubectl apply/edit/patch/delete`, Argo sync или cloud workflow в
+  рамках repository validation.
