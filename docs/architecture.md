@@ -1,199 +1,116 @@
 # Architecture
 
-## Overview
+This repository is the declarative Kubernetes layer of the
+`app-poly-gitops` lab. It contains desired state only; provisioning and Argo CD
+bootstrap are owned by
+[`app-poly-gitops-infra`](https://github.com/justgithubaccount/app-poly-gitops-infra).
 
-GitOps-платформа на базе ArgoCD с App-of-Apps паттерном для управления Kubernetes кластером.
+## Reconciliation model
 
-## Diagram
+~~~mermaid
+flowchart LR
+    Infra[Terraform and Argo CD bootstrap] --> Argo[Argo CD]
+    GitOps[clusters/dev or clusters/smoke] --> Argo
+    Helm[FastAPI Helm chart] --> Argo
+    Argo --> Cluster[Kubernetes resources]
+    FastAPI[FastAPI image] --> Cluster
+    CrewAI[CrewAI image] --> Cluster
+~~~
 
-```mermaid
-flowchart TB
-    subgraph CLOUD["Timeweb Cloud"]
-        subgraph K8S["Kubernetes Cluster"]
-            subgraph ARGOCD["ArgoCD (namespace: argocd)"]
-                AOA[app-of-apps]
-                AOA --> APPS
-            end
+An environment root renders Argo CD `Application` objects. Each child
+application then pulls a pinned chart or a versioned path and reconciles it into
+the in-cluster destination. Sync waves order Argo CD child applications; they do
+not replace readiness checks inside a child chart.
 
-            subgraph APPS["Applications"]
-                direction TB
-                PLATFORM[Platform Apps]
-                TENANT[Tenant Apps]
-            end
+## Supported environment roots
 
-            subgraph INFRA["Infrastructure"]
-                NGINX[ingress-nginx]
-                CERT[cert-manager]
-                DNS[external-dns]
-                SEALED[sealed-secrets]
-                REFLECT[reflector]
-                LONG[longhorn]
-            end
+### Development
 
-            subgraph DB["Database"]
-                PGO[pgo-operator]
-                CNPG[cloudnative-pg]
-            end
+`clusters/dev` is the full application profile validated by CI. It includes:
 
-            subgraph OBS["Observability"]
-                LOKI[loki]
-                GRAF[grafana]
-                VEC[vector]
-            end
+- namespace definitions;
+- ingress-nginx, cert-manager, and external-dns for the documented dev hosts;
+- Loki, Grafana, and a Vector OTLP gateway;
+- Argo CD Image Updater;
+- the FastAPI Helm release and CrewAI runtime.
 
-            subgraph TENANT_NS["Tenant Namespaces"]
-                CHAT[chat-api]
-                CHATDB[(PostgreSQL)]
-            end
-        end
-    end
+FastAPI uses local SQLite in this profile. Database operators and custom database
+resources exist as optional building blocks but are not included by the dev root.
+The standalone UI repository is also not included.
 
-    subgraph GIT["GitHub"]
-        K8S_REPO[app-poly-gitops-k8s]
-        HELM_REPO[app-poly-gitops-helm]
-        INFRA_REPO[app-poly-gitops-infra]
-    end
+### Smoke
 
-    K8S_REPO -->|sync| AOA
-    HELM_REPO -->|charts| APPS
-    INFRA_REPO -->|bootstrap| ARGOCD
+`clusters/smoke` is the bounded disposable profile used by the infrastructure
+acceptance workflow. It contains FastAPI, CrewAI, and a small Jaeger deployment.
+It has no public ingress, DNS automation, Grafana, Loki, or Vector.
 
-    CHAT --> CHATDB
-    CHAT -->|OTLP| VEC
-    VEC -->|logs| LOKI
-    VEC -->|structured traces| VECLOG[debug output]
-    LOKI --> GRAF
-```
+### Scaffolding
 
-## Repository Structure
+`clusters/tst`, `clusters/stg`, and `clusters/prd` are not in the CI
+Kustomize matrix. Their tenant secrets, destination setup, and operational
+procedures are incomplete. Treat them as scaffolding, not deployable environment
+contracts.
 
-```
-app-poly-gitops-k8s/
-├── clusters/                    # Environment entry points
-│   ├── dev/
-│   │   ├── kustomization.yaml   # Assembles all resources
-│   │   └── destination.yaml     # Cluster name patch
-│   └── prd/
-│       └── ...
-├── platform/                    # Platform components
-│   ├── core/
-│   │   ├── namespaces/          # Namespace definitions
-│   │   └── cluster-bootstrap/   # app-of-apps root
-│   ├── infrastructure/
-│   │   ├── networking/          # nginx, cert-manager, external-dns
-│   │   ├── security/            # sealed-secrets, reflector, external-secrets
-│   │   ├── storage/             # longhorn
-│   │   ├── database/            # pgo, cloudnative-pg
-│   │   └── ai-platform/         # open-webui
-│   ├── observability/
-│   │   ├── monitoring/          # loki, grafana
-│   │   └── opentelemetry/       # otel-collector
-│   └── gitops/
-│       └── argocd-image-updater/
-├── tenants/                     # Team applications
-│   └── product-team/
-│       └── apps/
-│           └── chat/
-│               ├── base/        # Base application
-│               └── overlays/    # Environment overrides
-│                   └── dev/
-└── policies/                    # OPA Rego policies
-```
+## Application delivery
 
-## Data Flow
+FastAPI is rendered from
+[`app-poly-gitops-helm`](https://github.com/justgithubaccount/app-poly-gitops-helm).
+Environment overlays supply the image tag, provider URL/model, telemetry
+endpoint, resources, and existing Secret references. CrewAI is rendered from
+`tenants/product-team/apps/crewai/runtime` with environment telemetry patches.
 
-### GitOps Sync
+Image Updater annotations are present on the FastAPI Argo CD application, but a
+configured Git write-back credential and an active updater are required before
+automatic changes can occur.
 
-```
-Developer Push → GitHub → ArgoCD Sync → Kubernetes Apply
-                              ↑
-              argocd-image-updater (auto-update images)
-```
+## Observability
 
-### Observability Pipeline
+The development profile sends OTLP/HTTP data to Vector:
 
-```
-chat-api / CrewAI (OpenTelemetry SDK)
-    ↓ OTLP/HTTP
-Vector gateway
-    ├─ logs → Loki → Grafana
-    └─ traces → structured Vector output
-```
+~~~text
+FastAPI and CrewAI
+  -> Vector gateway
+     -> OTLP logs to Loki
+     -> OTLP traces to structured console output
+     -> metrics discarded
+~~~
 
-### Secret Management
+Grafana is configured with Loki as a data source. The development profile does
+not deploy Jaeger. The smoke profile instead sends traces directly to Jaeger and
+does not deploy the development observability stack.
 
-```
-SealedSecret (encrypted in git)
-    ↓ sealed-secrets controller
-Secret (decrypted in cluster)
-    ↓ reflector
-Secret (replicated to other namespaces)
-```
+## Networking and secrets
 
-## Sync Waves
+The development profile declares three intended hosts:
 
-Порядок деплоя контролируется через `argocd.argoproj.io/sync-wave`:
+- `argo.syncjob.ru`
+- `grafana.syncjob.ru`
+- `chat-dev.syncjob.ru`
 
-| Wave | Components |
-|------|------------|
-| 0 | Namespaces |
-| 1 | CRD Operators (cert-manager, sealed-secrets, longhorn, cloudnative-pg) |
-| 2 | ClusterIssuers, StorageClasses |
-| 3 | Secrets, ConfigMaps, Ingresses |
-| 5 | Applications (chat-api) |
+External DNS is restricted to annotated Ingresses in `syncjob.ru`, uses
+upsert-only policy, and tracks ownership with TXT records. cert-manager uses a
+Cloudflare DNS-01 issuer. Fresh `cloudflare-token`, `grafana-admin`, and
+`chat-api-basic-auth` Secrets must be created outside Git for a new cluster.
+The provider key for FastAPI and the LLM key for CrewAI are also runtime Secrets.
 
-## Component Details
+See [DEV-WEBS.md](DEV-WEBS.md) for the security boundaries and exact Secret
+names. No secret value is stored in this repository.
 
-### CloudNativePG
+## Repository layout
 
-Простой PostgreSQL оператор для dev окружений:
+~~~text
+clusters/                 environment entrypoints
+platform/core/            namespaces, RBAC, and bootstrap applications
+platform/infrastructure/  optional platform components
+platform/observability/   dev and smoke telemetry components
+platform/gitops/          Argo CD automation
+tenants/                  application desired state
+policies/                 OPA policy
+tests/                    rendered-contract checks
+~~~
 
-```yaml
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: chat-db-cnpg
-spec:
-  instances: 1
-  storage:
-    storageClass: longhorn
-    size: 5Gi
-  bootstrap:
-    initdb:
-      database: chat
-      owner: chatapi
-```
+## Validation boundary
 
-Создаёт секрет `<cluster-name>-app` с ключами:
-- `uri` — полный connection string
-- `host`, `port`, `dbname`, `user`, `password`
-
-### OpenTelemetry Collector
-
-Принимает OTLP traces/logs и отправляет в Loki:
-
-```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-exporters:
-  loki:
-    endpoint: http://loki.monitoring:3100/loki/api/v1/push
-```
-
-### Reflector
-
-Реплицирует секреты между namespaces через аннотации:
-
-```yaml
-annotations:
-  reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-  reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "cert-manager"
-  reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-  reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "cert-manager"
-```
+CI renders and validates only `dev` and `smoke`. A successful render proves
+the desired state can be assembled; it does not prove a cluster, DNS record,
+certificate, provider call, or telemetry backend is live.
